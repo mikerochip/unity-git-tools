@@ -1,0 +1,17 @@
+{
+  "name": "com.mikerochip.git-goodies",
+  "version": "1.0.0",
+  "displayName": "Git Goodies",
+  "description": "Improve your Unity project's Git integration, mostly for LFS locks",
+  "unity": "2020.1",
+  "unityRelease": "0f1",
+  "keywords": [
+    "git",
+    "goodies"
+  ],
+  "author": {
+    "name": "Mike Schweitzer",
+    "email": "mschweitzer@gmail.com",
+    "url": "https://github.com/mikerochip/unity-git-goodies"
+  }
+}
