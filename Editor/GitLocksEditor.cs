@@ -37,16 +37,7 @@ namespace GitGoodies.Editor
 
         private void OnGUI()
         {
-            using (new EditorGUI.DisabledScope(!GitSettings.HasUsername))
-            {
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-                EditorGUILayout.LabelField("Locks", EditorStyles.boldLabel, GUILayout.MaxWidth(150.0f));
-                if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
-                    GitSettings.RefreshLocks();
-                _showIds = EditorGUILayout.ToggleLeft("Show Lock ID", _showIds, GUILayout.MaxWidth(100.0f));
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-            }
+            LayoutHeader();
             
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
             _singleLineHeight = GUILayout.Height(EditorGUIUtility.singleLineHeight);
@@ -64,6 +55,41 @@ namespace GitGoodies.Editor
         private void OnLocksRefreshed(object sender, EventArgs e)
         {
             Repaint();
+        }
+
+        private void LayoutHeader()
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                
+            using (new EditorGUI.DisabledScope(!GitSettings.HasUsername))
+            {
+                EditorGUILayout.LabelField("Locks", EditorStyles.boldLabel, GUILayout.MaxWidth(150.0f));
+                
+                if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
+                    GitSettings.RefreshLocks();
+                
+                if (GUILayout.Button("Sort", EditorStyles.toolbarDropDown, GUILayout.ExpandWidth(false)))
+                {
+                    var menu = new GenericMenu();
+                    AddSortMenu(menu);
+                    menu.ShowAsContext();
+                }
+            }
+                
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private static void AddSortMenu(GenericMenu menu, string submenu = "")
+        {
+            var prefix = string.IsNullOrWhiteSpace(submenu) ? "" : $"{submenu}/";
+            foreach (LockSortType type in Enum.GetValues(typeof(LockSortType)))
+            {
+                menu.AddItem(new GUIContent($"{prefix}{type}"), false, () =>
+                {
+                    GitSettings.LockSortType = type;
+                });
+            }
         }
 
         private void LayoutUsername()
@@ -165,6 +191,18 @@ namespace GitGoodies.Editor
         #region IHasCustomMenu Methods
         public void AddItemsToMenu(GenericMenu menu)
         {
+            var showIdMsg = _showIds
+                ? "Hide Lock ID"
+                : "Show Lock ID";
+            menu.AddItem(new GUIContent(showIdMsg), false, () =>
+            {
+                _showIds = !_showIds;
+            });
+            
+            AddSortMenu(menu, "Sort by");
+            
+            menu.AddSeparator("");
+            
             menu.AddItem(new GUIContent("Reset Git Username"), false, () =>
             {
                 GitSettings.Username = null;

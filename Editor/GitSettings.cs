@@ -32,6 +32,18 @@ namespace GitGoodies.Editor
         public static bool HasUsername => !string.IsNullOrWhiteSpace(Username);
         public static string Branch => instance._branch;
         public static IEnumerable<LfsLock> Locks => instance._Locks;
+        public static LockSortType LockSortType
+        {
+            get => instance._LockSortType;
+            set
+            {
+                if (instance._LockSortType == value)
+                    return;
+                instance._LockSortType = value;
+                instance.SortLocksImpl();
+                Save();
+            }
+        }
 
         public static event EventHandler LocksRefreshed;
         #endregion
@@ -40,8 +52,9 @@ namespace GitGoodies.Editor
         private const double UpdateInterval = 30.0f;
 
         [SerializeField] private string _Username;
-        [SerializeField] private List<LfsLock> _Locks = new();
         [SerializeField] private string _LfsProcessName = "";
+        [SerializeField] private List<LfsLock> _Locks = new();
+        [SerializeField] private LockSortType _LockSortType;
         
         private string _repoRootPath;
         private string _branch;
@@ -236,9 +249,27 @@ namespace GitGoodies.Editor
                 _Locks.Add(lfsLock);
             }
 
+            SortLocksImpl();
+
             Save();
             
             LocksRefreshed?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SortLocksImpl()
+        {
+            _Locks.Sort(CompareLocks);
+
+            int CompareLocks(LfsLock x, LfsLock y)
+            {
+                return _LockSortType switch
+                {
+                    LockSortType.User => string.Compare(x.User, y.User, StringComparison.CurrentCultureIgnoreCase),
+                    LockSortType.Path => string.Compare(x.Path, y.Path, StringComparison.InvariantCultureIgnoreCase),
+                    LockSortType.Id => string.Compare(x.Id, y.Id, StringComparison.InvariantCultureIgnoreCase),
+                    _ => throw new NotImplementedException()
+                };
+            }
         }
 
         private List<string> InvokeLfs(string args)
