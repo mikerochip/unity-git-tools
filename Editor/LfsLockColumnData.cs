@@ -34,6 +34,7 @@ namespace GitGoodies.Editor
                     headerTextAlignment = TextAlignment.Left,
                     sortingArrowAlignment = TextAlignment.Right,
                     minWidth = 150.0f,
+                    width = 150.0f,
                 },
             },
             new LfsLockColumn
