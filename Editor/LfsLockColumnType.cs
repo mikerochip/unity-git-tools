@@ -1,6 +1,6 @@
 namespace GitGoodies.Editor
 {
-    public enum LockSortType
+    public enum LfsLockColumnType
     {
         User,
         Path,

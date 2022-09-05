@@ -32,18 +32,8 @@ namespace GitGoodies.Editor
         public static bool HasUsername => !string.IsNullOrWhiteSpace(Username);
         public static string Branch => instance._branch;
         public static IEnumerable<LfsLock> Locks => instance._Locks;
-        public static LockSortType LockSortType
-        {
-            get => instance._LockSortType;
-            set
-            {
-                if (instance._LockSortType == value)
-                    return;
-                instance._LockSortType = value;
-                instance.SortLocksImpl();
-                Save();
-            }
-        }
+        public static LfsLockSortType LockSortType => instance._LockSortType;
+        public static bool IsLockSortAscending => instance._LockSortAscending;
 
         public static event EventHandler LocksRefreshed;
         #endregion
@@ -54,7 +44,8 @@ namespace GitGoodies.Editor
         [SerializeField] private string _Username;
         [SerializeField] private string _LfsProcessName = "";
         [SerializeField] private List<LfsLock> _Locks = new();
-        [SerializeField] private LockSortType _LockSortType;
+        [SerializeField] private LfsLockSortType _LockSortType;
+        [SerializeField] private bool _LockSortAscending;
         
         private string _repoRootPath;
         private string _branch;
@@ -81,6 +72,13 @@ namespace GitGoodies.Editor
         public static void RefreshLocks()
         {
             instance.RefreshLocksImpl();
+        }
+
+        public static void SortLocks(LfsLockSortType type, bool ascending)
+        {
+            instance._LockSortType = type;
+            instance._LockSortAscending = ascending;
+            instance.SortLocksImpl();
         }
         #endregion
         
@@ -262,12 +260,25 @@ namespace GitGoodies.Editor
 
             int CompareLocks(LfsLock x, LfsLock y)
             {
-                return _LockSortType switch
+                if (!_LockSortAscending)
+                    (y, x) = (x, y);
+                
+                switch (_LockSortType)
                 {
-                    LockSortType.User => string.Compare(x.User, y.User, StringComparison.CurrentCultureIgnoreCase),
-                    LockSortType.Path => string.Compare(x.Path, y.Path, StringComparison.InvariantCultureIgnoreCase),
-                    LockSortType.Id => string.Compare(x.Id, y.Id, StringComparison.InvariantCultureIgnoreCase),
-                    _ => throw new NotImplementedException()
+                    case LfsLockSortType.User:
+                        var result = string.Compare(x.User, y.User, StringComparison.CurrentCultureIgnoreCase);
+                        if (result != 0)
+                            return result;
+                        goto case LfsLockSortType.Path;
+                        
+                        case LfsLockSortType.Path:
+                            return string.Compare(x.Path, y.Path, StringComparison.InvariantCultureIgnoreCase);
+                        
+                        case LfsLockSortType.Id:
+                            return string.Compare(x.Id, y.Id, StringComparison.InvariantCultureIgnoreCase);
+                        
+                        default:
+                            throw new NotImplementedException();
                 };
             }
         }

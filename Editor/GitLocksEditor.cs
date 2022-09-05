@@ -1,18 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-
-using Object = UnityEngine.Object;
 
 namespace GitGoodies.Editor
 {
     public class GitLocksEditor : EditorWindow, IHasCustomMenu
     {
         #region Private Fields
-        private Vector2 _scrollPos;
-        private GUILayoutOption _singleLineHeight;
-        private bool _showIds;
+        private MultiColumnHeaderState _multiColumnHeaderState;
+        private MultiColumnHeader _multiColumnHeader;
+        private TreeViewState _locksTreeViewState = new TreeViewState();
+        private GitLocksTreeView _locksTreeView;
         #endregion
 
         #region Private Properties
@@ -32,6 +33,7 @@ namespace GitGoodies.Editor
         #region Unity Methods
         private void OnEnable()
         {
+            InitializeTree();
             GitSettings.LocksRefreshed += OnLocksRefreshed;
         }
 
@@ -39,22 +41,48 @@ namespace GitGoodies.Editor
         {
             LayoutHeader();
             
-            _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
-            _singleLineHeight = GUILayout.Height(EditorGUIUtility.singleLineHeight);
-
             if (CanShowLocks)
                 LayoutLocks();
             else
                 LayoutUsername();
-            
-            EditorGUILayout.EndScrollView();
         }
         #endregion
 
         #region Private Methods
         private void OnLocksRefreshed(object sender, EventArgs e)
         {
+            _locksTreeView.Reload();
+            
             Repaint();
+        }
+
+        private void InitializeTree()
+        {
+            var columns = new MultiColumnHeaderState.Column[LfsLockColumnData.Columns.Length];
+            var sortedColumns = new List<int>();
+            var sortedColumnIndex = -1;
+            for (var i = 0; i < LfsLockColumnData.Columns.Length; ++i)
+            {
+                var column = LfsLockColumnData.Columns[i].Column;
+                columns[i] = column;
+                
+                if (!column.canSort)
+                    continue;
+                
+                sortedColumns.Add(i);
+                if (GitSettings.LockSortType == (LfsLockSortType)column.userData)
+                    sortedColumnIndex = i;
+            }
+
+            _multiColumnHeaderState = new MultiColumnHeaderState(columns)
+            {
+                sortedColumns = sortedColumns.ToArray(),
+                maximumNumberOfSortedColumns = sortedColumns.Count,
+                sortedColumnIndex = sortedColumnIndex,
+            };
+            _multiColumnHeader = new MultiColumnHeader(_multiColumnHeaderState);
+            
+            _locksTreeView = new GitLocksTreeView(_locksTreeViewState, _multiColumnHeader);
         }
 
         private void LayoutHeader()
@@ -67,29 +95,10 @@ namespace GitGoodies.Editor
                 
                 if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                     GitSettings.RefreshLocks();
-                
-                if (GUILayout.Button("Sort", EditorStyles.toolbarDropDown, GUILayout.ExpandWidth(false)))
-                {
-                    var menu = new GenericMenu();
-                    AddSortMenu(menu);
-                    menu.ShowAsContext();
-                }
             }
                 
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-        }
-
-        private static void AddSortMenu(GenericMenu menu, string submenu = "")
-        {
-            var prefix = string.IsNullOrWhiteSpace(submenu) ? "" : $"{submenu}/";
-            foreach (LockSortType type in Enum.GetValues(typeof(LockSortType)))
-            {
-                menu.AddItem(new GUIContent($"{prefix}{type}"), false, () =>
-                {
-                    GitSettings.LockSortType = type;
-                });
-            }
         }
 
         private void LayoutUsername()
@@ -129,80 +138,18 @@ namespace GitGoodies.Editor
                 EditorGUILayout.Space();
                 return;
             }
-            
-            foreach (var lfsLock in GitSettings.Locks)
-            {
-                EditorGUILayout.Space();
-                
-                EditorGUILayout.BeginHorizontal();
 
-                LayoutButtons(lfsLock);
-                LayoutStats(lfsLock);
-                
-                EditorGUILayout.EndHorizontal();
-            }
-
-            void LayoutButtons(LfsLock lfsLock)
-            {
-                const float buttonWidth = 60.0f;
-
-                var hasLock = lfsLock.User == GitSettings.Username;
-                
-                var paddingHeight = _showIds
-                    ? 0.5f * EditorGUIUtility.singleLineHeight
-                    : 0.0f;
-                
-                EditorGUILayout.BeginVertical(GUILayout.MaxWidth(buttonWidth));
-                GUILayoutUtility.GetRect(0.0f, paddingHeight);
-                
-                using (new EditorGUI.DisabledScope(!hasLock))
-                {
-                    var tooltip = hasLock ? "" : "This is locked by someone else";
-                    if (GUILayout.Button(new GUIContent("Unlock", tooltip), GUILayout.Width(buttonWidth)))
-                        GitSettings.Unlock(lfsLock.Id);
-                }
-                
-                const string forceTooltip = "Force Unlock";
-                if (GUILayout.Button(new GUIContent("FUnlock", forceTooltip), GUILayout.Width(buttonWidth)))
-                    GitSettings.ForceUnlock(lfsLock.Id);
-                
-                GUILayoutUtility.GetRect(0.0f, paddingHeight);
-                EditorGUILayout.EndVertical();
-            }
-
-            void LayoutStats(LfsLock lfsLock)
-            {
-                EditorGUILayout.BeginVertical();
-                
-                var asset = AssetDatabase.LoadAssetAtPath<Object>(lfsLock.Path);
-                if (asset == null)
-                    EditorGUILayout.SelectableLabel(lfsLock.Path, _singleLineHeight);
-                else
-                    EditorGUILayout.ObjectField(asset, asset.GetType(), allowSceneObjects: false);
-                EditorGUILayout.SelectableLabel($"Locked by {lfsLock.User}", _singleLineHeight);
-                if (_showIds)
-                    EditorGUILayout.SelectableLabel($"ID {lfsLock.Id}", _singleLineHeight);
-                
-                EditorGUILayout.EndVertical();
-            }
+            var rect = GUILayoutUtility.GetLastRect();
+            rect.y += rect.height;
+            rect.width = position.width;
+            rect.height = position.height;
+            _locksTreeView.OnGUI(rect);
         }
         #endregion
 
         #region IHasCustomMenu Methods
         public void AddItemsToMenu(GenericMenu menu)
         {
-            var showIdMsg = _showIds
-                ? "Hide Lock ID"
-                : "Show Lock ID";
-            menu.AddItem(new GUIContent(showIdMsg), false, () =>
-            {
-                _showIds = !_showIds;
-            });
-            
-            AddSortMenu(menu, "Sort by");
-            
-            menu.AddSeparator("");
-            
             menu.AddItem(new GUIContent("Reset Git Username"), false, () =>
             {
                 GitSettings.Username = null;
