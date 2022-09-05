@@ -118,7 +118,7 @@ namespace GitGoodies.Editor
 
             void LayoutButtons(LfsLock lfsLock)
             {
-                const float buttonWidth = 50.0f;
+                const float buttonWidth = 60.0f;
 
                 var hasLock = lfsLock.User == GitSettings.Username;
                 
@@ -136,7 +136,7 @@ namespace GitGoodies.Editor
                         GitSettings.Unlock(lfsLock.Id);
                 }
                 
-                const string forceTooltip = "Unlock someone else's lock";
+                const string forceTooltip = "Force Unlock";
                 if (GUILayout.Button(new GUIContent("FUnlock", forceTooltip), GUILayout.Width(buttonWidth)))
                     GitSettings.ForceUnlock(lfsLock.Id);
                 
