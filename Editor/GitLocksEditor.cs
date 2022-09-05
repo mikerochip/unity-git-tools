@@ -100,7 +100,7 @@ namespace GitGoodies.Editor
             EditorGUILayout.BeginVertical();
             GUILayout.FlexibleSpace();
 
-            EditorGUILayout.LabelField("Enter your GitHub Username");
+            EditorGUILayout.LabelField("Enter your Git Username");
             EditorGUILayout.Space();
             GitSettings.Username = EditorGUILayout.DelayedTextField(GitSettings.Username);
             
