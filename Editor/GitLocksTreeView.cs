@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -84,12 +85,49 @@ namespace GitGoodies.Editor
             }
         }
 
+        protected override void ContextClicked()
+        {
+            var lfsLocks = new List<LfsLock>();
+            foreach (var id in state.selectedIDs)
+                lfsLocks.Add(_locks[id]);
+            
+            var menu = new GenericMenu();
+            
+            if (lfsLocks.Any(lfsLock => lfsLock.User == GitSettings.Username))
+            {
+                menu.AddItem(new GUIContent("Unlock"), false, () =>
+                {
+                    foreach (var lfsLock in lfsLocks)
+                        GitSettings.Unlock(lfsLock.Id);
+                });
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Unlock"), false);
+            }
+
+            if (lfsLocks.Any())
+            {
+                menu.AddItem(new GUIContent("Force Unlock"), false, () =>
+                {
+                    foreach (var lfsLock in lfsLocks)
+                        GitSettings.ForceUnlock(lfsLock.Id);
+                });
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Force Unlock"), false);
+            }
+            
+            menu.ShowAsContext();
+            
+            Event.current.Use();
+        }
+
         protected override void ContextClickedItem(int id)
         {
-            base.ContextClickedItem(id);
-            
             var lfsLock = _locks[id];
-            var hasLock = GitSettings.Username == lfsLock.User;
+            var hasLock = lfsLock.User == GitSettings.Username;
             
             var menu = new GenericMenu();
             
@@ -102,6 +140,7 @@ namespace GitGoodies.Editor
             {
                 menu.AddDisabledItem(new GUIContent("Unlock"), false);
             }
+            
             menu.AddItem(new GUIContent("Force Unlock"), false, () =>
                 GitSettings.ForceUnlock(lfsLock.Id));
             
