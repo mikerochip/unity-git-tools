@@ -10,14 +10,18 @@ namespace GitGoodies.Editor
 {
     public class GitLocksTreeView : TreeView
     {
+        #region Private Fields
         private LfsLock[] _locks;
+        #endregion
         
+        #region TreeView Methods
         public GitLocksTreeView(TreeViewState state, MultiColumnHeader multiColumnHeader)
             : base(state, multiColumnHeader)
         {
             useScrollView = true;
             multiColumnHeader.ResizeToFit();
-            multiColumnHeader.sortingChanged += MultiColumnHeaderOnSortingChanged;
+            multiColumnHeader.sortingChanged += OnSortingChanged;
+            multiColumnHeader.visibleColumnsChanged += OnVisibleColumnsChanged;
         }
 
         protected override TreeViewItem BuildRoot()
@@ -104,7 +108,7 @@ namespace GitGoodies.Editor
             menu.AddSeparator("");
             menu.AddItem(new GUIContent($"Copy/User"), false, () => 
                 GUIUtility.systemCopyBuffer = lfsLock.User);
-            menu.AddItem(new GUIContent($"Copy/Path"), false, () => 
+            menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () => 
                 GUIUtility.systemCopyBuffer = lfsLock.Path);
             menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () => 
                 GUIUtility.systemCopyBuffer = lfsLock.AssetGuid);
@@ -115,8 +119,10 @@ namespace GitGoodies.Editor
             
             Event.current.Use();
         }
+        #endregion
 
-        private void MultiColumnHeaderOnSortingChanged(MultiColumnHeader _)
+        #region Column Event Handlers
+        private void OnSortingChanged(MultiColumnHeader _)
         {
             var ascending = multiColumnHeader.IsSortedAscending(multiColumnHeader.sortedColumnIndex);
             
@@ -137,5 +143,11 @@ namespace GitGoodies.Editor
             
             Reload();
         }
+
+        private void OnVisibleColumnsChanged(MultiColumnHeader _)
+        {
+            multiColumnHeader.ResizeToFit();
+        }
+        #endregion
     }
 }

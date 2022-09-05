@@ -18,8 +18,8 @@ namespace GitGoodies.Editor
                     allowToggleVisibility = false,
                     headerTextAlignment = TextAlignment.Left,
                     sortingArrowAlignment = TextAlignment.Right,
-                    minWidth = 80.0f,
-                    width = 80.0f,
+                    minWidth = 60.0f,
+                    width = 60.0f,
                 }
             },
             new LfsLockColumn
@@ -27,7 +27,7 @@ namespace GitGoodies.Editor
                 Type = LfsLockColumnType.Path,
                 Column = new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent("Asset"),
+                    headerContent = new GUIContent("Asset Path"),
                     userData = (int)LfsLockSortType.Path,
                     canSort = true,
                     allowToggleVisibility = false,
@@ -39,6 +39,7 @@ namespace GitGoodies.Editor
             new LfsLockColumn
             {
                 Type = LfsLockColumnType.Id,
+                IsDefaultVisible = false,
                 Column = new MultiColumnHeaderState.Column
                 {
                     headerContent = new GUIContent("ID"),

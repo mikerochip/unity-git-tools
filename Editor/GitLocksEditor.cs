@@ -34,6 +34,9 @@ namespace GitGoodies.Editor
         private void OnEnable()
         {
             InitializeTree();
+            if (GitSettings.Locks.Any())
+                _locksTreeView.Reload();
+            
             GitSettings.LocksRefreshed += OnLocksRefreshed;
         }
 
@@ -59,12 +62,16 @@ namespace GitGoodies.Editor
         private void InitializeTree()
         {
             var columns = new MultiColumnHeaderState.Column[LfsLockColumnData.Columns.Length];
+            var visibleColumns = new List<int>();
             var sortedColumns = new List<int>();
             var sortedColumnIndex = -1;
             for (var i = 0; i < LfsLockColumnData.Columns.Length; ++i)
             {
                 var column = LfsLockColumnData.Columns[i].Column;
                 columns[i] = column;
+                
+                if (LfsLockColumnData.Columns[i].IsDefaultVisible)
+                    visibleColumns.Add(i);
                 
                 if (!column.canSort)
                     continue;
@@ -79,6 +86,7 @@ namespace GitGoodies.Editor
                 sortedColumns = sortedColumns.ToArray(),
                 maximumNumberOfSortedColumns = sortedColumns.Count,
                 sortedColumnIndex = sortedColumnIndex,
+                visibleColumns = visibleColumns.ToArray(),
             };
             _multiColumnHeader = new MultiColumnHeader(_multiColumnHeaderState);
             
