@@ -165,7 +165,7 @@ namespace GitGoodies.Editor
         #region IHasCustomMenu Methods
         public void AddItemsToMenu(GenericMenu menu)
         {
-            menu.AddItem(new GUIContent("Reset GitHub Username"), false, () =>
+            menu.AddItem(new GUIContent("Reset Git Username"), false, () =>
             {
                 GitSettings.Username = null;
             });
