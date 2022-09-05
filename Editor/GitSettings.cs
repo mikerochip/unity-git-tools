@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 
 namespace GitGoodies.Editor
 {
-    [FilePath("UserSettings/GitGoodies/Settings.asset", FilePathAttribute.Location.ProjectFolder)]
+    [FilePath("UserSettings/Git/Settings.asset", FilePathAttribute.Location.ProjectFolder)]
     public class GitSettings : ScriptableSingleton<GitSettings>
     {
         #region Public Properties

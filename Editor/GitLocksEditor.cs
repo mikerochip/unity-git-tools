@@ -21,7 +21,7 @@ namespace GitGoodies.Editor
         #endregion
 
         #region Public Methods
-        [MenuItem("Window/Git Goodies/Locks")]
+        [MenuItem("Window/Git/Locks")]
         public static void ShowWindow()
         {
             var window = GetWindow<GitLocksEditor>("Git Locks", focus: true);
