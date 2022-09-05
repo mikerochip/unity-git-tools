@@ -43,13 +43,14 @@ namespace GitGoodies.Editor
                 IsDefaultVisible = false,
                 Column = new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent("ID"),
+                    headerContent = new GUIContent("Lock ID"),
                     userData = (int)LfsLockSortType.Id,
                     canSort = true,
                     allowToggleVisibility = true,
                     headerTextAlignment = TextAlignment.Left,
                     sortingArrowAlignment = TextAlignment.Right,
                     minWidth = 60.0f,
+                    width = 60.0f,
                 },
             },
         };
