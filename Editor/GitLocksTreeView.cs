@@ -87,11 +87,44 @@ namespace GitGoodies.Editor
 
         protected override void ContextClicked()
         {
+            var menu = new GenericMenu();
+            
+            AddUnlockItems(menu);
+            
+            menu.ShowAsContext();
+            Event.current.Use();
+        }
+
+        protected override void ContextClickedItem(int id)
+        {
+            var lfsLock = _locks[id];
+            
+            var menu = new GenericMenu();
+            
+            AddUnlockItems(menu);
+            
+            menu.AddSeparator("");
+            
+            menu.AddItem(new GUIContent($"Copy/User"), false, () => 
+                GUIUtility.systemCopyBuffer = lfsLock.User);
+            menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () => 
+                GUIUtility.systemCopyBuffer = lfsLock.Path);
+            menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () => 
+                GUIUtility.systemCopyBuffer = lfsLock.AssetGuid);
+            menu.AddItem(new GUIContent($"Copy/Lock ID"), false, () => 
+                GUIUtility.systemCopyBuffer = lfsLock.Id);
+            
+            menu.ShowAsContext();
+            Event.current.Use();
+        }
+        #endregion
+
+        #region Private Methods
+        private void AddUnlockItems(GenericMenu menu)
+        {
             var lfsLocks = new List<LfsLock>();
             foreach (var id in state.selectedIDs)
                 lfsLocks.Add(_locks[id]);
-            
-            var menu = new GenericMenu();
             
             if (lfsLocks.Any(lfsLock => lfsLock.User == GitSettings.Username))
             {
@@ -118,45 +151,6 @@ namespace GitGoodies.Editor
             {
                 menu.AddDisabledItem(new GUIContent("Force Unlock"), false);
             }
-            
-            menu.ShowAsContext();
-            
-            Event.current.Use();
-        }
-
-        protected override void ContextClickedItem(int id)
-        {
-            var lfsLock = _locks[id];
-            var hasLock = lfsLock.User == GitSettings.Username;
-            
-            var menu = new GenericMenu();
-            
-            if (hasLock)
-            {
-                menu.AddItem(new GUIContent("Unlock"), false, () =>
-                    GitSettings.Unlock(lfsLock.Id));
-            }
-            else
-            {
-                menu.AddDisabledItem(new GUIContent("Unlock"), false);
-            }
-            
-            menu.AddItem(new GUIContent("Force Unlock"), false, () =>
-                GitSettings.ForceUnlock(lfsLock.Id));
-            
-            menu.AddSeparator("");
-            menu.AddItem(new GUIContent($"Copy/User"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.User);
-            menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.Path);
-            menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.AssetGuid);
-            menu.AddItem(new GUIContent($"Copy/Lock ID"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.Id);
-            
-            menu.ShowAsContext();
-            
-            Event.current.Use();
         }
         #endregion
 
