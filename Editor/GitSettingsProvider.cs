@@ -23,7 +23,7 @@ namespace GitGoodies.Editor
             EditorGUILayout.Space(7.0f);
             EditorGUILayout.BeginVertical();
             
-            EditorGUILayout.LabelField("Enter your GitHub Username");
+            EditorGUILayout.LabelField("Enter your Git Username");
             EditorGUILayout.Space();
             GitSettings.Username = EditorGUILayout.DelayedTextField(GitSettings.Username);
 

@@ -42,7 +42,7 @@ namespace GitGoodies.Editor
             var hasLock = lfsLock.User == GitSettings.Username;
             var tooltip = hasLock ? "Locked by you" : $"Locked by {lfsLock.User}";
             if (!GitSettings.HasUsername)
-                tooltip += "\n\nTo use locks, set your GitHub username in preferences";
+                tooltip += "\n\nTo use locks, set your Git username in preferences";
             
             var prevColor = GUI.contentColor;
             GUI.contentColor = _lockColor;
