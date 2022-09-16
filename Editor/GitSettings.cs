@@ -30,10 +30,13 @@ namespace GitGoodies.Editor
             }
         }
         public static bool HasUsername => !string.IsNullOrWhiteSpace(Username);
+        
         public static string Branch => instance._branch;
+        
         public static IEnumerable<LfsLock> Locks => instance._Locks;
         public static LfsLockSortType LockSortType => instance._LockSortType;
         public static bool IsLockSortAscending => instance._LockSortAscending;
+        public static bool AreLocksRefreshing => instance._refreshLocksTask != null;
 
         public static event EventHandler LocksRefreshed;
         #endregion

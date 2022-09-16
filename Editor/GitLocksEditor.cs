@@ -16,10 +16,6 @@ namespace GitGoodies.Editor
         private GitLocksTreeView _locksTreeView;
         #endregion
 
-        #region Private Properties
-        private static bool CanShowLocks => GitSettings.HasUsername;
-        #endregion
-
         #region Public Methods
         [MenuItem("Window/Git/Locks")]
         public static void ShowWindow()
@@ -43,11 +39,22 @@ namespace GitGoodies.Editor
         private void OnGUI()
         {
             LayoutHeader();
-            
-            if (CanShowLocks)
-                LayoutLocks();
-            else
+
+            if (!GitSettings.HasUsername)
+            {
                 LayoutUsername();
+            }
+            else if (!GitSettings.Locks.Any())
+            {
+                if (GitSettings.AreLocksRefreshing)
+                    LayoutRefreshingLocks();
+                else
+                    LayoutNoLocks();
+            }
+            else
+            {
+                LayoutLocks();
+            }
         }
         #endregion
 
@@ -128,25 +135,41 @@ namespace GitGoodies.Editor
             EditorGUILayout.EndHorizontal();
         }
         
+        private void LayoutRefreshingLocks()
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            
+            EditorGUILayout.BeginVertical();
+            GUILayout.FlexibleSpace();
+
+            EditorGUILayout.LabelField("Refreshing Locks...");
+            
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndVertical();
+            
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
+        
+        private void LayoutNoLocks()
+        {
+            EditorGUILayout.Space();
+
+            EditorGUILayout.BeginHorizontal();
+            var content = new GUIContent("Nothing is locked");
+            var contentWidth = 0.5f * (position.width - EditorStyles.label.CalcSize(content).x);
+            var spacerWidth = Mathf.Max(contentWidth, 0.0f);
+            GUILayout.Space(spacerWidth);
+            EditorGUILayout.LabelField(content);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.Space();
+        }
+        
         private void LayoutLocks()
         {
-            if (!GitSettings.Locks.Any())
-            {
-                EditorGUILayout.Space();
-
-                EditorGUILayout.BeginHorizontal();
-                var content = new GUIContent("Nothing is locked");
-                var contentWidth = 0.5f * (position.width - EditorStyles.label.CalcSize(content).x);
-                var spacerWidth = Mathf.Max(contentWidth, 0.0f);
-                GUILayout.Space(spacerWidth);
-                EditorGUILayout.LabelField(content);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-                
-                EditorGUILayout.Space();
-                return;
-            }
-
             var rect = GUILayoutUtility.GetLastRect();
             rect.y += rect.height;
             rect.width = position.width;
