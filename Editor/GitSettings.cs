@@ -38,7 +38,8 @@ namespace GitGoodies.Editor
         public static bool IsLockSortAscending => instance._LockSortAscending;
         public static bool AreLocksRefreshing => instance._refreshLocksTask != null;
 
-        public static event EventHandler LocksRefreshed;
+        public static event Action LocksRefreshed;
+        public static event Action<LfsLock> LockStatusChanged;
         #endregion
         
         #region Private Fields
@@ -194,6 +195,19 @@ namespace GitGoodies.Editor
         #region LFS
         private void LockImpl(string path)
         {
+            if (Locks.Any(lfsLock => lfsLock.Path == path))
+                return;
+            
+            var lfsLock = new LfsLock
+            {
+                Path = path,
+                AssetGuid = AssetDatabase.AssetPathToGUID(path),
+                User = Username,
+                IsPending = true,
+            };
+            _Locks.Add(lfsLock);
+            LockStatusChanged?.Invoke(lfsLock);
+            
             Task.Run(() =>
             {
                 InvokeLfs($"lock {path}");
@@ -208,6 +222,13 @@ namespace GitGoodies.Editor
 
         private void UnlockImpl(string id, bool force)
         {
+            var lfsLock = Locks.First(lfsLock => lfsLock.Id == id);
+            if (lfsLock.IsPending)
+                return;
+            
+            lfsLock.IsPending = true;
+            LockStatusChanged?.Invoke(lfsLock);
+            
             Task.Run(() =>
             {
                 InvokeLfs($"unlock --id {id}" + (force ? " --force" : ""));
@@ -254,7 +275,7 @@ namespace GitGoodies.Editor
 
             Save();
             
-            LocksRefreshed?.Invoke(this, EventArgs.Empty);
+            LocksRefreshed?.Invoke();
         }
 
         private void SortLocksImpl()

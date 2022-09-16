@@ -7,5 +7,6 @@ namespace GitGoodies.Editor
         public string AssetGuid { get; set; }
         public string User { get; set; }
         public string Id { get; set; }
+        public bool IsPending { get; set; }
     }
 }

@@ -54,6 +54,8 @@ namespace GitGoodies.Editor
         {
             var lfsLock = _locks[args.item.id];
             
+            EditorGUI.BeginDisabledGroup(lfsLock.IsPending);
+            
             for (var i = 0; i < args.GetNumVisibleColumns(); ++i)
             {
                 var colType = (LfsLockColumnType)args.GetColumn(i);
@@ -83,6 +85,8 @@ namespace GitGoodies.Editor
                         throw new NotImplementedException();
                 }
             }
+            
+            EditorGUI.EndDisabledGroup();
         }
 
         protected override void ContextClicked()
@@ -126,7 +130,7 @@ namespace GitGoodies.Editor
             foreach (var id in state.selectedIDs)
                 lfsLocks.Add(_locks[id]);
             
-            if (lfsLocks.Any(lfsLock => lfsLock.User == GitSettings.Username))
+            if (lfsLocks.All(lfsLock => !lfsLock.IsPending) && lfsLocks.Any(lfsLock => lfsLock.User == GitSettings.Username))
             {
                 menu.AddItem(new GUIContent("Unlock"), false, () =>
                 {
@@ -139,7 +143,7 @@ namespace GitGoodies.Editor
                 menu.AddDisabledItem(new GUIContent("Unlock"), false);
             }
 
-            if (lfsLocks.Any())
+            if (lfsLocks.All(lfsLock => !lfsLock.IsPending))
             {
                 menu.AddItem(new GUIContent("Force Unlock"), false, () =>
                 {

@@ -10,6 +10,7 @@ namespace GitGoodies.Editor
     public class GitLocksEditor : EditorWindow, IHasCustomMenu
     {
         #region Private Fields
+        private Texture _loadingIcon;
         private MultiColumnHeaderState _multiColumnHeaderState;
         private MultiColumnHeader _multiColumnHeader;
         private TreeViewState _locksTreeViewState = new TreeViewState();
@@ -30,10 +31,12 @@ namespace GitGoodies.Editor
         private void OnEnable()
         {
             InitializeTree();
+            
             if (GitSettings.Locks.Any())
                 _locksTreeView.Reload();
             
             GitSettings.LocksRefreshed += OnLocksRefreshed;
+            GitSettings.LockStatusChanged += OnLockStatusChanged;
         }
 
         private void OnGUI()
@@ -59,7 +62,14 @@ namespace GitGoodies.Editor
         #endregion
 
         #region Private Methods
-        private void OnLocksRefreshed(object sender, EventArgs e)
+        private void OnLocksRefreshed()
+        {
+            _locksTreeView.Reload();
+            
+            Repaint();
+        }
+
+        private void OnLockStatusChanged(LfsLock lfsLock)
         {
             _locksTreeView.Reload();
             
