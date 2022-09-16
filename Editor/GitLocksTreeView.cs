@@ -93,7 +93,7 @@ namespace GitGoodies.Editor
         {
             var menu = new GenericMenu();
             
-            AddUnlockItems(menu);
+            AddContextMenuUnlockItems(menu);
             
             menu.ShowAsContext();
             Event.current.Use();
@@ -101,22 +101,11 @@ namespace GitGoodies.Editor
 
         protected override void ContextClickedItem(int id)
         {
-            var lfsLock = _locks[id];
-            
             var menu = new GenericMenu();
             
-            AddUnlockItems(menu);
-            
+            AddContextMenuUnlockItems(menu);
             menu.AddSeparator("");
-            
-            menu.AddItem(new GUIContent($"Copy/User"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.User);
-            menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.Path);
-            menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.AssetGuid);
-            menu.AddItem(new GUIContent($"Copy/Lock ID"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.Id);
+            AddContextMenuCopyItems(menu, id);
             
             menu.ShowAsContext();
             Event.current.Use();
@@ -124,7 +113,7 @@ namespace GitGoodies.Editor
         #endregion
 
         #region Private Methods
-        private void AddUnlockItems(GenericMenu menu)
+        private void AddContextMenuUnlockItems(GenericMenu menu)
         {
             var lfsLocks = new List<LfsLock>();
             foreach (var id in state.selectedIDs)
@@ -154,6 +143,30 @@ namespace GitGoodies.Editor
             else
             {
                 menu.AddDisabledItem(new GUIContent("Force Unlock"), false);
+            }
+        }
+
+        private void AddContextMenuCopyItems(GenericMenu menu, int id)
+        {
+            var lfsLock = _locks[id];
+            
+            menu.AddItem(new GUIContent($"Copy/User"), false, () => 
+                GUIUtility.systemCopyBuffer = lfsLock.User);
+            
+            menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () => 
+                GUIUtility.systemCopyBuffer = lfsLock.Path);
+            
+            menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () => 
+                GUIUtility.systemCopyBuffer = lfsLock.AssetGuid);
+
+            if (!string.IsNullOrEmpty(lfsLock.Id))
+            {
+                menu.AddItem(new GUIContent($"Copy/Lock ID"), false, () => 
+                    GUIUtility.systemCopyBuffer = lfsLock.Id);
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent($"Copy/Lock ID"), false);
             }
         }
         #endregion
