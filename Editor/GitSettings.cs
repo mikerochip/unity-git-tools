@@ -95,8 +95,9 @@ namespace GitGoodies.Editor
             
             EditorApplication.update += OnUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            UnityEditorFocusChanged += OnFocusChanged;
+            EditorApplication.quitting += OnQuitting;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+            UnityEditorFocusChanged += OnFocusChanged;
 
             // need to call this AFTER installing unity event hooks or else async tasks can lock
             // up the editor
@@ -118,6 +119,11 @@ namespace GitGoodies.Editor
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            _refreshLocksTask?.Wait();
+        }
+        
+        private void OnQuitting()
         {
             _refreshLocksTask?.Wait();
         }
