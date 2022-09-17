@@ -4,5 +4,6 @@ Improve your Unity project's Git integration with this package. Mostly helps you
 
 # How to Use
 
-* Window > Git
-* Right click on an asset in the Project tab to lock or unlock the asset
+* Set your username for your hosting service (GitHub, GitLab, etc) in ```Preferences > Git```
+* Open the Git LFS Locks editor with ```Window > Git > Locks```
+* Right click on an asset in the Project tab to lock, unlock, or force unlock it
