@@ -1,4 +1,4 @@
-# Unity Git Goodies
+# Unity Git Tools
 
 Improve your Unity project's Git integration with this package. Mostly helps you manage Git LFS Locks in the editor.
 
