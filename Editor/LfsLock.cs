@@ -1,5 +1,5 @@
 
-namespace GitGoodies.Editor
+namespace GitTools.Editor
 {
     public class LfsLock
     {

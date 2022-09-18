@@ -11,7 +11,7 @@ using UnityEngine;
 
 using Debug = UnityEngine.Debug;
 
-namespace GitGoodies.Editor
+namespace GitTools.Editor
 {
     [FilePath("UserSettings/Git/Settings.asset", FilePathAttribute.Location.ProjectFolder)]
     public class GitSettings : ScriptableSingleton<GitSettings>
@@ -127,6 +127,11 @@ namespace GitGoodies.Editor
         {
             _refreshLocksTask?.Wait();
         }
+
+        private void OnBeforeAssemblyReload()
+        {
+            _refreshLocksTask?.Wait();
+        }
         
         private void OnFocusChanged(bool focused)
         {
@@ -135,11 +140,6 @@ namespace GitGoodies.Editor
             
             LoadBranch();
             RefreshLocksImpl();
-        }
-
-        private void OnBeforeAssemblyReload()
-        {
-            _refreshLocksTask?.Wait();
         }
         
         // see http://answers.unity.com/answers/1886639/view.html

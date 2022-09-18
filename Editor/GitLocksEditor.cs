@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
-namespace GitGoodies.Editor
+namespace GitTools.Editor
 {
     public class GitLocksEditor : EditorWindow, IHasCustomMenu
     {

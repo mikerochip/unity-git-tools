@@ -1,6 +1,6 @@
 using UnityEditor.IMGUI.Controls;
 
-namespace GitGoodies.Editor
+namespace GitTools.Editor
 {
     public class LfsLockColumn
     {

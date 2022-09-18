@@ -1,6 +1,6 @@
 {
-    "name": "GitGoodies.Editor",
-    "rootNamespace": "GitGoodies.Editor",
+    "name": "GitTools.Editor",
+    "rootNamespace": "GitTools.Editor",
     "references": [],
     "optionalUnityReferences": [],
     "includePlatforms": [

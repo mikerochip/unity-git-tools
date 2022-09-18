@@ -1,4 +1,4 @@
-namespace GitGoodies.Editor
+namespace GitTools.Editor
 {
     public enum LfsLockColumnType
     {

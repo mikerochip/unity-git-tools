@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace GitGoodies.Editor
+namespace GitTools.Editor
 {
     public static class AssetsMenuExtensions
     {
