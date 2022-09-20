@@ -65,7 +65,10 @@ namespace GitTools.Editor
 
             return guids.Any(guid =>
             {
-                return GitSettings.Locks.Any(lfsLock => lfsLock.AssetGuid == guid && lfsLock.User == GitSettings.Username);
+                return GitSettings.Locks.Any(lfsLock =>
+                    !lfsLock.IsPending &&
+                    lfsLock.AssetGuid == guid &&
+                    lfsLock.User == GitSettings.Username);
             });
         }
         
@@ -79,7 +82,9 @@ namespace GitTools.Editor
                 var guid = AssetDatabase.AssetPathToGUID(path);
 
                 var lfsLock = GitSettings.Locks.FirstOrDefault(lfsLock =>
-                    lfsLock.AssetGuid == guid && lfsLock.User == GitSettings.Username);
+                    !lfsLock.IsPending &&
+                    lfsLock.AssetGuid == guid &&
+                    lfsLock.User == GitSettings.Username);
                 if (lfsLock == null)
                     continue;
                 
@@ -103,7 +108,9 @@ namespace GitTools.Editor
                 return AssetDatabase.AssetPathToGUID(path);
             });
 
-            return guids.Any(guid => GitSettings.Locks.Any(lfsLock => lfsLock.AssetGuid == guid));
+            return guids.Any(guid => GitSettings.Locks.Any(lfsLock => 
+                !lfsLock.IsPending &&
+                lfsLock.AssetGuid == guid));
         }
         
         [MenuItem("Assets/Git Force Unlock", priority = 10_000)]
@@ -115,7 +122,9 @@ namespace GitTools.Editor
                 var path = AssetDatabase.GetAssetPath(obj);
                 var guid = AssetDatabase.AssetPathToGUID(path);
 
-                var lfsLock = GitSettings.Locks.FirstOrDefault(lfsLock => lfsLock.AssetGuid == guid);
+                var lfsLock = GitSettings.Locks.FirstOrDefault(lfsLock =>
+                    !lfsLock.IsPending &&
+                    lfsLock.AssetGuid == guid);
                 if (lfsLock == null)
                     continue;
                 
