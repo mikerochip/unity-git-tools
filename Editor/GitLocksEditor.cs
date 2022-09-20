@@ -60,15 +60,16 @@ namespace GitTools.Editor
         #region Private Methods
         private void OnLocksRefreshed()
         {
-            _locksTreeView.Reload();
+            if (!GitSettings.Locks.Any())
+                return;
             
+            _locksTreeView.Reload();
             Repaint();
         }
 
         private void OnLockStatusChanged(LfsLock lfsLock)
         {
             _locksTreeView.Reload();
-            
             Repaint();
         }
 
