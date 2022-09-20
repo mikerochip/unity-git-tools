@@ -137,7 +137,8 @@ namespace GitTools.Editor
         {
             if (!focused)
                 return;
-            
+
+            CacheRepoRootDir();
             LoadBranch();
             RefreshLocksImpl();
         }
@@ -165,11 +166,18 @@ namespace GitTools.Editor
         {
             instance.Save(saveAsText: true);
         }
+        #endregion
 
+        #region Core
         private void CacheRepoRootDir()
         {
             if (!string.IsNullOrEmpty(_repoRootPath))
+            {
+                // if this is no longer a git repo, then clear out the repo info
+                if (!Directory.Exists(_repoRootPath))
+                    _repoRootPath = string.Empty;
                 return;
+            }
             
             var directory = Directory.GetParent(Application.dataPath);
             while (directory is { Exists: true })
@@ -184,11 +192,15 @@ namespace GitTools.Editor
                 directory = directory.Parent;
             }
         }
-        #endregion
         
-        #region Branch
         private void LoadBranch()
         {
+            if (!IsGitRepo)
+            {
+                _branch = string.Empty;
+                return;
+            }
+            
             var headPath = Path.Combine(_repoRootPath, ".git", "HEAD");
             if (!File.Exists(headPath))
                 throw new Exception($"[Git] Failed to load Git branch from \"{headPath}\"");
