@@ -43,24 +43,17 @@ namespace GitTools.Editor
             LayoutHeader();
 
             if (!GitSettings.IsGitRepo)
-            {
                 LayoutNonGitRepo();
-            }
-            if (!GitSettings.HasUsername)
-            {
+            else if (!GitSettings.HasLfsProcess)
+                LayoutNoLfsProcess();
+            else if (!GitSettings.HasLfsInRepo)
+                LayoutNoLfsInRepo();
+            else if (!GitSettings.HasUsername)
                 LayoutUsername();
-            }
             else if (!GitSettings.Locks.Any())
-            {
-                if (GitSettings.AreLocksRefreshing)
-                    LayoutRefreshingLocks();
-                else
-                    LayoutNoLocks();
-            }
+                LayoutNoLocks();
             else
-            {
                 LayoutLocks();
-            }
         }
         #endregion
 
@@ -131,58 +124,66 @@ namespace GitTools.Editor
 
         private void LayoutNonGitRepo()
         {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
+            LayoutCenteredMessageHeader();
             
-            EditorGUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
+            EditorGUILayout.HelpBox(
+                "This is not in a Git repo.",
+                MessageType.Error);
+            
+            LayoutCenteredMessageFooter();
+        }
 
-            EditorGUILayout.LabelField("This project is not in a Git repo");
+        private void LayoutNoLfsProcess()
+        {
+            LayoutCenteredMessageHeader();
             
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndVertical();
+            EditorGUILayout.HelpBox(
+                "Failed to run Git LFS.\nYou need LFS to manage locks.",
+                MessageType.Error);
             
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
+            LayoutCenteredMessageFooter();
+        }
+
+        private void LayoutNoLfsInRepo()
+        {
+            LayoutCenteredMessageHeader();
+            
+            EditorGUILayout.HelpBox(
+                "Failed to find [lfs] in Git config.\nYou need LFS to manage locks.",
+                MessageType.Warning);
+            
+            LayoutCenteredMessageFooter();
         }
 
         private void LayoutUsername()
         {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
+            LayoutCenteredMessageHeader();
             
-            EditorGUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
-
-            EditorGUILayout.LabelField("Enter your Git Username");
+            EditorGUILayout.LabelField("Enter Git Username");
             EditorGUILayout.Space();
             GitSettings.Username = EditorGUILayout.DelayedTextField(GitSettings.Username);
             
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndVertical();
-            
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
+            LayoutCenteredMessageFooter();
+        }
+        
+        private void LayoutNoLocks()
+        {
+            if (GitSettings.AreLocksRefreshing)
+                LayoutRefreshingLocks();
+            else
+                LayoutNothingLocked();
         }
         
         private void LayoutRefreshingLocks()
         {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
+            LayoutCenteredMessageHeader();
             
-            EditorGUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
-
-            EditorGUILayout.LabelField("Refreshing Locks...");
+            EditorGUILayout.HelpBox("Refreshing Locks...", MessageType.Info);
             
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndVertical();
-            
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
+            LayoutCenteredMessageFooter();
         }
-        
-        private void LayoutNoLocks()
+
+        private void LayoutNothingLocked()
         {
             EditorGUILayout.Space();
 
@@ -205,6 +206,24 @@ namespace GitTools.Editor
             rect.width = position.width;
             rect.height = position.height;
             _locksTreeView.OnGUI(rect);
+        }
+
+        private void LayoutCenteredMessageHeader()
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            
+            EditorGUILayout.BeginVertical();
+            GUILayout.FlexibleSpace();
+        }
+        
+        private void LayoutCenteredMessageFooter()
+        {
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndVertical();
+            
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
         #endregion
 
