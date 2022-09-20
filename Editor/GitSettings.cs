@@ -17,9 +17,7 @@ namespace GitTools.Editor
     public class GitSettings : ScriptableSingleton<GitSettings>
     {
         #region Public Properties
-        public const int MaxLockItems = 50;
-        public const int ProcessTimeoutMs = 30_000;
-
+        // persistent configuration data
         public static string Username
         {
             get => instance._Username;
@@ -31,13 +29,21 @@ namespace GitTools.Editor
         }
         public static bool HasUsername => !string.IsNullOrWhiteSpace(Username);
         
+        // in-memory configuration data
+        public static int MaxLockItems { get; set; } = 50;
+        public static int ProcessTimeoutMs { get; set; } = 30_000;
+
+        // core data
+        public static bool IsGitRepo => !string.IsNullOrEmpty(instance._repoRootPath);
         public static string Branch => instance._branch;
         
+        // locks data
         public static IEnumerable<LfsLock> Locks => instance._Locks;
         public static LfsLockSortType LockSortType => instance._LockSortType;
         public static bool IsLockSortAscending => instance._LockSortAscending;
         public static bool AreLocksRefreshing => instance._refreshLocksTask != null;
 
+        // locks events
         public static event Action LocksRefreshed;
         public static event Action<LfsLock> LockStatusChanged;
         #endregion
