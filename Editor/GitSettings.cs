@@ -36,6 +36,8 @@ namespace GitTools.Editor
         // core data
         public static bool IsGitRepo => !string.IsNullOrEmpty(instance._repoRootPath);
         public static string Branch => instance._branch;
+        public static bool HasLfsProcess => instance._LfsProcessExists;
+        public static bool HasLfsInRepo => instance._hasLfsConfig;
         
         // locks data
         public static IEnumerable<LfsLock> Locks => instance._Locks;
@@ -53,12 +55,14 @@ namespace GitTools.Editor
 
         [SerializeField] private string _Username;
         [SerializeField] private string _LfsProcessName = "";
+        [SerializeField] private bool _LfsProcessExists;
         [SerializeField] private List<LfsLock> _Locks = new();
         [SerializeField] private LfsLockSortType _LockSortType;
         [SerializeField] private bool _LockSortAscending;
         
         private string _repoRootPath;
         private string _branch;
+        private bool _hasLfsConfig;
         private double _lastUpdateTime;
         private Task<List<string>> _refreshLocksTask;
         #endregion
@@ -95,9 +99,8 @@ namespace GitTools.Editor
         #region Unity Methods
         private void OnEnable()
         {
-            CacheRepoRootDir();
-            LoadBranch();
-            CacheLfsProcessName();
+            LoadRepoInfo();
+            CacheLfsProcess();
             
             EditorApplication.update += OnUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -144,8 +147,8 @@ namespace GitTools.Editor
             if (!focused)
                 return;
 
-            CacheRepoRootDir();
-            LoadBranch();
+            LoadRepoInfo();
+            CacheLfsProcess();
             RefreshLocksImpl();
         }
         
@@ -175,6 +178,13 @@ namespace GitTools.Editor
         #endregion
 
         #region Core
+        private void LoadRepoInfo()
+        {
+            CacheRepoRootDir();
+            LoadBranch();
+            LoadLfsConfig();
+        }
+        
         private void CacheRepoRootDir()
         {
             if (!string.IsNullOrEmpty(_repoRootPath))
@@ -201,11 +211,10 @@ namespace GitTools.Editor
         
         private void LoadBranch()
         {
+            _branch = string.Empty;
+            
             if (!IsGitRepo)
-            {
-                _branch = string.Empty;
                 return;
-            }
             
             var headPath = Path.Combine(_repoRootPath, ".git", "HEAD");
             if (!File.Exists(headPath))
@@ -213,6 +222,21 @@ namespace GitTools.Editor
             
             var line = File.ReadLines(headPath).First();
             _branch = line.Replace("ref: refs/heads/", "");
+        }
+        
+        private void LoadLfsConfig()
+        {
+            _hasLfsConfig = false;
+            
+            if (!IsGitRepo)
+                return;
+            
+            var configPath = Path.Combine(_repoRootPath, ".git", "config");
+            if (!File.Exists(configPath))
+                throw new Exception($"[Git] Failed to load Git config \"{configPath}\"");
+
+            var text = File.ReadAllText(configPath);
+            _hasLfsConfig = text.Contains("[lfs]");
         }
         #endregion
         
@@ -377,15 +401,37 @@ namespace GitTools.Editor
             return outputLines;
         }
 
-        private void CacheLfsProcessName()
+        private void CacheLfsProcess()
         {
             if (!string.IsNullOrWhiteSpace(_LfsProcessName))
                 return;
             
-            // On Windows, lfs should be able to be invoked without a full path
+            // On Windows, running lfs is our best bet to check if it exists
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
                 _LfsProcessName = "git-lfs";
+                
+                using var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo(_LfsProcessName, "version")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                    },
+                };
+                try
+                {
+                    _LfsProcessExists = process.Start();
+                }
+                catch (Exception e)
+                {
+                    _LfsProcessExists = (e is not ThreadAbortException);
+                }
+                finally
+                {
+                    if (!_LfsProcessExists)
+                        _LfsProcessName = string.Empty;
+                }
                 return;
             }
             
@@ -393,14 +439,16 @@ namespace GitTools.Editor
             // Homebrew also asks you to inject path vars into your shell profile, which we don't
             // have access to when we run Process.Start, since we want to redirect stdout.
             //
-            // So the hacky thing we do here is try to guess where your LFS is installed with the
-            // ARM and Intel paths. We could invoke "command -v" but that would cost extra invokes.
+            // The hacky thing done here is guessing where your LFS is installed by checking both
+            // paths. Invoking "command -v git-lfs" is a less-hacky-but-less-performant option.
             // 
             // More on Homebrew diffs between Intel/ARM: https://apple.stackexchange.com/a/93179
             // More on Process.Start paths in C#: https://stackoverflow.com/a/41318134
             _LfsProcessName = "/opt/homebrew/bin/git-lfs";
             if (!File.Exists(_LfsProcessName))
                 _LfsProcessName = "/usr/local/bin/git-lfs";
+
+            _LfsProcessExists = File.Exists(_LfsProcessName);
         }
         #endregion
     }
