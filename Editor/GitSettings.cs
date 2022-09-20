@@ -104,6 +104,7 @@ namespace GitTools.Editor
             
             EditorApplication.update += OnUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            EditorApplication.wantsToQuit += OnWantsToQuit;
             EditorApplication.quitting += OnQuitting;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             UnityEditorFocusChanged += OnFocusChanged;
@@ -130,6 +131,12 @@ namespace GitTools.Editor
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             _refreshLocksTask?.Wait();
+        }
+        
+        private bool OnWantsToQuit()
+        {
+            _refreshLocksTask?.Wait();
+            return true;
         }
         
         private void OnQuitting()
