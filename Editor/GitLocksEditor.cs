@@ -177,11 +177,11 @@ namespace GitTools.Editor
         
         private void LayoutRefreshingLocks()
         {
-            LayoutCenteredMessageHeader();
+            EditorGUILayout.Space();
             
             EditorGUILayout.HelpBox("Refreshing Locks...", MessageType.Info);
             
-            LayoutCenteredMessageFooter();
+            EditorGUILayout.Space();
         }
 
         private void LayoutNothingLocked()
