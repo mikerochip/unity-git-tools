@@ -42,6 +42,10 @@ namespace GitTools.Editor
         {
             LayoutHeader();
 
+            if (!GitSettings.IsGitRepo)
+            {
+                LayoutNonGitRepo();
+            }
             if (!GitSettings.HasUsername)
             {
                 LayoutUsername();
@@ -121,6 +125,23 @@ namespace GitTools.Editor
                     GitSettings.RefreshLocks();
             }
                 
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void LayoutNonGitRepo()
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            
+            EditorGUILayout.BeginVertical();
+            GUILayout.FlexibleSpace();
+
+            EditorGUILayout.LabelField("This project is not in a Git repo");
+            
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndVertical();
+            
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }
