@@ -295,8 +295,8 @@ namespace GitTools.Editor
             
             _refreshLocksTask.ContinueWith(task =>
             {
-                ProcessLocksResult(task.Result);
                 _refreshLocksTask = null;
+                ProcessLocksResult(task.Result);
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
