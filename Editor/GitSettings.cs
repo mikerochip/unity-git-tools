@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -43,7 +44,7 @@ namespace GitTools.Editor
         public static IEnumerable<LfsLock> Locks => instance._Locks;
         public static LfsLockSortType LockSortType => instance._LockSortType;
         public static bool IsLockSortAscending => instance._LockSortAscending;
-        public static bool AreLocksRefreshing => instance._refreshLocksTask != null;
+        public static bool AreLocksRefreshing => instance._refreshLocksTasks.Count > 0;
 
         // locks events
         public static event Action LocksRefreshed;
@@ -64,7 +65,8 @@ namespace GitTools.Editor
         private string _branch;
         private bool _hasLfsConfig;
         private double _lastUpdateTime;
-        private Task<List<string>> _refreshLocksTask;
+        private readonly ConcurrentDictionary<int, Task> _tasks = new();
+        private readonly ConcurrentDictionary<int, Task<List<string>>> _refreshLocksTasks = new();
         #endregion
         
         #region Public Methods
@@ -104,7 +106,6 @@ namespace GitTools.Editor
             
             EditorApplication.update += OnUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            EditorApplication.wantsToQuit += OnWantsToQuit;
             EditorApplication.quitting += OnQuitting;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             UnityEditorFocusChanged += OnFocusChanged;
@@ -130,23 +131,17 @@ namespace GitTools.Editor
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            _refreshLocksTask?.Wait();
-        }
-        
-        private bool OnWantsToQuit()
-        {
-            _refreshLocksTask?.Wait();
-            return true;
+            WaitForTasks();
         }
         
         private void OnQuitting()
         {
-            _refreshLocksTask?.Wait();
+            WaitForTasks();
         }
 
         private void OnBeforeAssemblyReload()
         {
-            _refreshLocksTask?.Wait();
+            WaitForTasks();
         }
         
         private void OnFocusChanged(bool focused)
@@ -181,6 +176,13 @@ namespace GitTools.Editor
         private static void Save()
         {
             instance.Save(saveAsText: true);
+        }
+
+        private void WaitForTasks()
+        {
+            Task.WaitAll(_tasks.Values.Concat(_refreshLocksTasks.Values).ToArray());
+            _tasks.Clear();
+            _refreshLocksTasks.Clear();
         }
         #endregion
 
@@ -263,16 +265,10 @@ namespace GitTools.Editor
             _Locks.Add(lfsLock);
             LockStatusChanged?.Invoke(lfsLock);
             
-            Task.Run(() =>
-            {
-                InvokeLfs($"lock {path}");
-            }).ContinueWith(_ =>
-            {
-                return InvokeLfs("locks");
-            }).ContinueWith(task =>
-            {
-                ProcessLocksResult(task.Result);
-            }, TaskScheduler.FromCurrentSynchronizationContext());
+            var task = Task.Run(() => InvokeLfs($"lock {path}"));
+            _tasks[task.Id] = task;
+
+            RefreshLocksImpl(task);
         }
 
         private void UnlockImpl(string id, bool force)
@@ -284,27 +280,35 @@ namespace GitTools.Editor
             lfsLock.IsPending = true;
             LockStatusChanged?.Invoke(lfsLock);
             
-            Task.Run(() =>
-            {
-                InvokeLfs($"unlock --id {id}" + (force ? " --force" : ""));
-            }).ContinueWith(_ =>
-            {
-                return InvokeLfs("locks");
-            }).ContinueWith(task =>
-            {
-                ProcessLocksResult(task.Result);
-            }, TaskScheduler.FromCurrentSynchronizationContext());
+            var task = Task.Run(() => InvokeLfs($"unlock --id {id}" + (force ? " --force" : "")));
+            _tasks[task.Id] = task;
+
+            RefreshLocksImpl(task);
         }
         
-        private void RefreshLocksImpl()
+        private void RefreshLocksImpl(Task priorTask = null)
         {
-            _refreshLocksTask = Task.Run(() => InvokeLfs("locks"));
-            
-            _refreshLocksTask.ContinueWith(task =>
+            Task<List<string>> task;
+            if (priorTask == null)
             {
-                _refreshLocksTask = null;
-                ProcessLocksResult(task.Result);
-            }, TaskScheduler.FromCurrentSynchronizationContext());
+                task = Task.Run(() => InvokeLfs("locks"));
+            }
+            else
+            {
+                task = priorTask.ContinueWith(t =>
+                {
+                    _tasks.TryRemove(t.Id, out _);
+                    return InvokeLfs("locks");
+                });
+            }
+            _refreshLocksTasks[task.Id] = task;
+
+            task.ContinueWith(t =>
+            {
+                _refreshLocksTasks.TryRemove(t.Id, out _);
+                ProcessLocksResult(t.Result);
+            },
+            TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         private void ProcessLocksResult(List<string> results)
