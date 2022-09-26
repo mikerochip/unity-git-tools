@@ -116,14 +116,23 @@ namespace GitTools.Editor
         private void AddContextMenuUnlockItems(GenericMenu menu)
         {
             var lfsLocks = new List<LfsLock>();
+            var ownedLfsLocks = new List<LfsLock>();
             foreach (var id in state.selectedIDs)
-                lfsLocks.Add(_locks[id]);
-            
-            if (lfsLocks.All(lfsLock => !lfsLock.IsPending) && lfsLocks.Any(lfsLock => lfsLock.User == GitSettings.Username))
+            {
+                var lfsLock = _locks[id];
+                if (lfsLock.IsPending)
+                    continue;
+                
+                lfsLocks.Add(lfsLock);
+                if (lfsLock.User == GitSettings.Username)
+                    ownedLfsLocks.Add(lfsLock);
+            }
+
+            if (ownedLfsLocks.Count > 0)
             {
                 menu.AddItem(new GUIContent("Unlock"), false, () =>
                 {
-                    foreach (var lfsLock in lfsLocks)
+                    foreach (var lfsLock in ownedLfsLocks)
                         GitSettings.Unlock(lfsLock.Id);
                 });
             }
@@ -132,7 +141,7 @@ namespace GitTools.Editor
                 menu.AddDisabledItem(new GUIContent("Unlock"), false);
             }
 
-            if (lfsLocks.All(lfsLock => !lfsLock.IsPending))
+            if (lfsLocks.Count > 0)
             {
                 menu.AddItem(new GUIContent("Force Unlock"), false, () =>
                 {
