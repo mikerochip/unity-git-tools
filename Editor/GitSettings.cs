@@ -342,31 +342,29 @@ namespace GitTools.Editor
 
         private void SortLocksImpl()
         {
-            _Locks.Sort(CompareLocks);
-
-            int CompareLocks(LfsLock x, LfsLock y)
+            _Locks.Sort((x, y) =>
             {
                 if (!_LockSortAscending)
                     (y, x) = (x, y);
-                
+
                 switch (_LockSortType)
                 {
                     case LfsLockSortType.User:
-                        var result = string.Compare(x.User, y.User, StringComparison.CurrentCultureIgnoreCase);
+                        var result = EditorUtility.NaturalCompare(x.User, y.User);
                         if (result != 0)
                             return result;
                         goto case LfsLockSortType.Path;
-                        
-                        case LfsLockSortType.Path:
-                            return string.Compare(x.Path, y.Path, StringComparison.InvariantCultureIgnoreCase);
-                        
-                        case LfsLockSortType.Id:
-                            return string.Compare(x.Id, y.Id, StringComparison.InvariantCultureIgnoreCase);
-                        
-                        default:
-                            throw new NotImplementedException();
-                };
-            }
+
+                    case LfsLockSortType.Path:
+                        return EditorUtility.NaturalCompare(x.Path, y.Path);
+
+                    case LfsLockSortType.Id:
+                        return EditorUtility.NaturalCompare(x.Id, y.Id);
+
+                    default:
+                        throw new NotImplementedException();
+                }
+            });
         }
 
         private List<string> InvokeLfs(string args)
