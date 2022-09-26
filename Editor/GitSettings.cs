@@ -265,7 +265,7 @@ namespace GitTools.Editor
             _Locks.Add(lfsLock);
             LockStatusChanged?.Invoke(lfsLock);
             
-            var task = Task.Run(() => InvokeLfs($"lock {path}"));
+            var task = Task.Run(() => InvokeLfs($"lock \"{path}\""));
             _tasks[task.Id] = task;
 
             RefreshLocksImpl(task);
