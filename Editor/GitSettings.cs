@@ -298,7 +298,9 @@ namespace GitTools.Editor
                 task = priorTask.ContinueWith(t =>
                 {
                     _tasks.TryRemove(t.Id, out _);
-                    return InvokeLfs("locks");
+                    // if other tasks are in flight, then listing locks is a waste
+                    // we only need to list locks after the last task is done
+                    return _tasks.Count > 0 ? null : InvokeLfs("locks");
                 });
             }
             _refreshLocksTasks[task.Id] = task;
@@ -306,7 +308,8 @@ namespace GitTools.Editor
             task.ContinueWith(t =>
             {
                 _refreshLocksTasks.TryRemove(t.Id, out _);
-                ProcessLocksResult(t.Result);
+                if (t.Result != null)
+                    ProcessLocksResult(t.Result);
             },
             TaskScheduler.FromCurrentSynchronizationContext());
         }
