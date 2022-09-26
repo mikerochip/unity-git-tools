@@ -36,19 +36,20 @@ namespace GitTools.Editor
         
         private static void ProjectWindowItemOnGUI(string guid, Rect selectionRect)
         {
-            var lfsLock = GitSettings.Locks.FirstOrDefault(lfsLock => lfsLock.AssetGuid == guid);
+            var lfsLock = GitSettings.Locks.FirstOrDefault(lfsLock => lfsLock._AssetGuid == guid);
             if (lfsLock == null)
                 return;
 
-            var icon = lfsLock.IsPending ? _loadingIcon : _lockIcon;
-            var color = lfsLock.IsPending ? _loadingColor : _lockColor;
+            var icon = lfsLock._IsPending ? _loadingIcon : _lockIcon;
+            var color = lfsLock._IsPending ? _loadingColor : _lockColor;
             
             var rect = selectionRect;
             rect.x = selectionRect.xMax - icon.width;
             rect.width += icon.width;
 
-            var hasLock = lfsLock.User == GitSettings.Username;
-            var tooltip = hasLock ? "Locked by you" : $"Locked by {lfsLock.User}";
+            var hasLock = lfsLock._User == GitSettings.Username;
+            var tooltip = hasLock ? "Locked by you" : $"Locked by {lfsLock._User}";
+            
             if (!GitSettings.HasUsername)
                 tooltip += "\n\nTo use locks, set your Git username in preferences";
             

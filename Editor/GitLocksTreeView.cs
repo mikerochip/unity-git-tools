@@ -54,7 +54,7 @@ namespace GitTools.Editor
         {
             var lfsLock = _locks[args.item.id];
             
-            EditorGUI.BeginDisabledGroup(lfsLock.IsPending);
+            EditorGUI.BeginDisabledGroup(lfsLock._IsPending);
             
             for (var i = 0; i < args.GetNumVisibleColumns(); ++i)
             {
@@ -64,21 +64,21 @@ namespace GitTools.Editor
                 switch (colType)
                 {
                     case LfsLockColumnType.User:
-                        EditorGUI.LabelField(rect, lfsLock.User);
+                        EditorGUI.LabelField(rect, lfsLock._User);
                         break;
                     
                     case LfsLockColumnType.Path:
                     {
-                        var asset = AssetDatabase.LoadAssetAtPath<Object>(lfsLock.Path);
+                        var asset = AssetDatabase.LoadAssetAtPath<Object>(lfsLock._Path);
                         if (asset == null)
-                            EditorGUI.LabelField(rect, lfsLock.Path);
+                            EditorGUI.LabelField(rect, lfsLock._Path);
                         else
                             EditorGUI.ObjectField(rect, asset, asset.GetType(), allowSceneObjects: false);
                         break;
                     }
                     
                     case LfsLockColumnType.Id:
-                        EditorGUI.LabelField(rect, lfsLock.Id);
+                        EditorGUI.LabelField(rect, lfsLock._Id);
                         break;
                     
                     default:
@@ -120,11 +120,11 @@ namespace GitTools.Editor
             foreach (var id in state.selectedIDs)
             {
                 var lfsLock = _locks[id];
-                if (lfsLock.IsPending)
+                if (lfsLock._IsPending)
                     continue;
                 
                 lfsLocks.Add(lfsLock);
-                if (lfsLock.User == GitSettings.Username)
+                if (lfsLock._User == GitSettings.Username)
                     ownedLfsLocks.Add(lfsLock);
             }
 
@@ -133,7 +133,7 @@ namespace GitTools.Editor
                 menu.AddItem(new GUIContent("Unlock"), false, () =>
                 {
                     foreach (var lfsLock in ownedLfsLocks)
-                        GitSettings.Unlock(lfsLock.Id);
+                        GitSettings.Unlock(lfsLock._Id);
                 });
             }
             else
@@ -146,7 +146,7 @@ namespace GitTools.Editor
                 menu.AddItem(new GUIContent("Force Unlock"), false, () =>
                 {
                     foreach (var lfsLock in lfsLocks)
-                        GitSettings.ForceUnlock(lfsLock.Id);
+                        GitSettings.ForceUnlock(lfsLock._Id);
                 });
             }
             else
@@ -160,18 +160,18 @@ namespace GitTools.Editor
             var lfsLock = _locks[id];
             
             menu.AddItem(new GUIContent($"Copy/User"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.User);
+                GUIUtility.systemCopyBuffer = lfsLock._User);
             
             menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.Path);
+                GUIUtility.systemCopyBuffer = lfsLock._Path);
             
             menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () => 
-                GUIUtility.systemCopyBuffer = lfsLock.AssetGuid);
+                GUIUtility.systemCopyBuffer = lfsLock._AssetGuid);
 
-            if (!string.IsNullOrEmpty(lfsLock.Id))
+            if (!string.IsNullOrEmpty(lfsLock._Id))
             {
                 menu.AddItem(new GUIContent($"Copy/Lock ID"), false, () => 
-                    GUIUtility.systemCopyBuffer = lfsLock.Id);
+                    GUIUtility.systemCopyBuffer = lfsLock._Id);
             }
             else
             {

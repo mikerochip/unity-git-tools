@@ -252,15 +252,15 @@ namespace GitTools.Editor
         #region LFS
         private void LockImpl(string path)
         {
-            if (Locks.Any(lfsLock => lfsLock.Path == path))
+            if (Locks.Any(lfsLock => lfsLock._Path == path))
                 return;
             
             var lfsLock = new LfsLock
             {
-                Path = path,
-                AssetGuid = AssetDatabase.AssetPathToGUID(path),
-                User = Username,
-                IsPending = true,
+                _Path = path,
+                _AssetGuid = AssetDatabase.AssetPathToGUID(path),
+                _User = Username,
+                _IsPending = true,
             };
             _Locks.Add(lfsLock);
             LockStatusChanged?.Invoke(lfsLock);
@@ -273,11 +273,11 @@ namespace GitTools.Editor
 
         private void UnlockImpl(string id, bool force)
         {
-            var lfsLock = Locks.First(lfsLock => lfsLock.Id == id);
-            if (lfsLock.IsPending)
+            var lfsLock = Locks.First(lfsLock => lfsLock._Id == id);
+            if (lfsLock._IsPending)
                 return;
             
-            lfsLock.IsPending = true;
+            lfsLock._IsPending = true;
             LockStatusChanged?.Invoke(lfsLock);
             
             var task = Task.Run(() => InvokeLfs($"unlock --id {id}" + (force ? " --force" : "")));
@@ -325,11 +325,11 @@ namespace GitTools.Editor
                 var parts = result.Split('\t');
                 var lfsLock = new LfsLock
                 {
-                    Path = parts[0].Trim(),
-                    User = parts[1].Trim(),
-                    Id = parts[2].Trim().Replace("ID:", ""),
+                    _Path = parts[0].Trim(),
+                    _User = parts[1].Trim(),
+                    _Id = parts[2].Trim().Replace("ID:", ""),
                 };
-                lfsLock.AssetGuid = AssetDatabase.AssetPathToGUID(lfsLock.Path);
+                lfsLock._AssetGuid = AssetDatabase.AssetPathToGUID(lfsLock._Path);
                 _Locks.Add(lfsLock);
             }
 
@@ -350,16 +350,16 @@ namespace GitTools.Editor
                 switch (_LockSortType)
                 {
                     case LfsLockSortType.User:
-                        var result = EditorUtility.NaturalCompare(x.User, y.User);
+                        var result = EditorUtility.NaturalCompare(x._User, y._User);
                         if (result != 0)
                             return result;
                         goto case LfsLockSortType.Path;
 
                     case LfsLockSortType.Path:
-                        return EditorUtility.NaturalCompare(x.Path, y.Path);
+                        return EditorUtility.NaturalCompare(x._Path, y._Path);
 
                     case LfsLockSortType.Id:
-                        return EditorUtility.NaturalCompare(x.Id, y.Id);
+                        return EditorUtility.NaturalCompare(x._Id, y._Id);
 
                     default:
                         throw new NotImplementedException();
