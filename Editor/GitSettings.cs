@@ -356,7 +356,7 @@ namespace GitTools.Editor
                         goto case LfsLockSortType.Path;
 
                     case LfsLockSortType.Path:
-                        return EditorUtility.NaturalCompare(x._Path, y._Path);
+                        return PathCompare(x._Path, y._Path);
 
                     case LfsLockSortType.Id:
                         return EditorUtility.NaturalCompare(x._Id, y._Id);
@@ -365,6 +365,52 @@ namespace GitTools.Editor
                         throw new NotImplementedException();
                 }
             });
+        }
+
+        private static int PathCompare(string x, string y)
+        {
+            var minLength = Math.Min(x.Length, y.Length);
+            for (var i = 0; i < minLength; ++i)
+            {
+                var cx = x[i];
+                var cy = y[i];
+                if (cx == cy)
+                    continue;
+
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                {
+                    // on Windows, folders always sort above files in the same directory
+                    var xNextSeparator = FindNextPathSeparator(x, i);
+                    var yNextSeparator = FindNextPathSeparator(y, i);
+                    var xIsFolder = x[xNextSeparator] is '/' or '\\';
+                    var yIsFolder = y[yNextSeparator] is '/' or '\\';
+                    if (xIsFolder && !yIsFolder)
+                        return -1;
+                    if (yIsFolder && !xIsFolder)
+                        return 1;
+                }
+                else
+                {
+                    // on Mac/Linux, folders only sort above files with the same name
+                    if (cx is '/' or '\\')
+                        return -1;
+                    if (cy is '/' or '\\')
+                        return 1;
+                }
+                break;
+            }
+            return EditorUtility.NaturalCompare(x, y);
+
+            static int FindNextPathSeparator(string s, int startIndex)
+            {
+                for (var i = startIndex; i < s.Length; ++i)
+                {
+                    var c = s[i];
+                    if (c is '/' or '\\')
+                        return i;
+                }
+                return s.Length - 1;
+            }
         }
 
         private List<string> InvokeLfs(string args)
