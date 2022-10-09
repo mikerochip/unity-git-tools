@@ -384,6 +384,26 @@ namespace GitTools.Editor
                     var yNextSeparator = FindNextPathSeparator(y, i);
                     var xIsFolder = x[xNextSeparator] is '/' or '\\';
                     var yIsFolder = y[yNextSeparator] is '/' or '\\';
+                    
+                    if (xIsFolder && yIsFolder)
+                    {
+                        // maybe a Unity bug...
+                        // 
+                        // 2 folders has a weird special case where NaturalCompare is ignored:
+                        // Foo
+                        // Foo 1
+                        // Foo 10
+                        // 
+                        // NaturalCompare does this (this is also how files sort):
+                        // Foo 1
+                        // Foo 10
+                        // Foo
+                        if (x[i] is '/' or '\\')
+                            return -1;
+                        if (y[i] is '/' or '\\')
+                            return 1;
+                    }
+                    
                     if (xIsFolder && !yIsFolder)
                         return -1;
                     if (yIsFolder && !xIsFolder)
