@@ -235,6 +235,10 @@ namespace GitTools.Editor
             {
                 GitSettings.Username = null;
             });
+            menu.AddItem(new GUIContent("Show Plain Text Paths"), GitLocksEditorSettings.IsShowingPlainTextPaths, () =>
+            {
+                GitLocksEditorSettings.IsShowingPlainTextPaths = !GitLocksEditorSettings.IsShowingPlainTextPaths;
+            });
         }
         #endregion
     }

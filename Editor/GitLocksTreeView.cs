@@ -69,11 +69,16 @@ namespace GitTools.Editor
                     
                     case LfsLockColumnType.Path:
                     {
-                        var asset = AssetDatabase.LoadAssetAtPath<Object>(lfsLock._Path);
-                        if (asset == null)
-                            EditorGUI.LabelField(rect, lfsLock._Path);
-                        else
-                            EditorGUI.ObjectField(rect, asset, asset.GetType(), allowSceneObjects: false);
+                        if (!GitLocksEditorSettings.IsShowingPlainTextPaths)
+                        {
+                            var asset = AssetDatabase.LoadAssetAtPath<Object>(lfsLock._Path);
+                            if (asset != null)
+                            {
+                                EditorGUI.ObjectField(rect, asset, asset.GetType(), allowSceneObjects: false);
+                                break;
+                            }
+                        }
+                        EditorGUI.LabelField(rect, lfsLock._Path);
                         break;
                     }
                     
@@ -94,6 +99,8 @@ namespace GitTools.Editor
             var menu = new GenericMenu();
             
             AddContextMenuUnlockItems(menu);
+            menu.AddSeparator("");
+            AddContextMenuSettings(menu);
             
             menu.ShowAsContext();
             Event.current.Use();
@@ -106,6 +113,7 @@ namespace GitTools.Editor
             AddContextMenuUnlockItems(menu);
             menu.AddSeparator("");
             AddContextMenuCopyItems(menu, id);
+            AddContextMenuSettings(menu);
             
             menu.ShowAsContext();
             Event.current.Use();
@@ -177,6 +185,14 @@ namespace GitTools.Editor
             {
                 menu.AddDisabledItem(new GUIContent($"Copy/Lock ID"), false);
             }
+        }
+
+        private void AddContextMenuSettings(GenericMenu menu)
+        {
+            menu.AddItem(new GUIContent("Settings/Plain Text Paths"), GitLocksEditorSettings.IsShowingPlainTextPaths, () =>
+            {
+                GitLocksEditorSettings.IsShowingPlainTextPaths = !GitLocksEditorSettings.IsShowingPlainTextPaths;
+            });
         }
         #endregion
 
