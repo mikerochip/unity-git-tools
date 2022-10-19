@@ -10,9 +10,7 @@ Improve your Unity project's Git integration with this package. Mostly helps you
 
 # Samples
 
-Set username
-
-<img width="525" src="https://user-images.githubusercontent.com/498714/196607652-5909049f-90e3-4c83-8ff7-864a13bce056.png">
+<img src="https://user-images.githubusercontent.com/498714/196613042-7129ce08-32fb-4dee-9c1e-33c63561868b.gif" width=568>
 
 Locks Window
 
