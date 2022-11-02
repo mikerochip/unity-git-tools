@@ -65,8 +65,8 @@ namespace GitTools.Editor
         private string _branch;
         private bool _hasLfsConfig;
         private double _lastUpdateTime;
-        private readonly ConcurrentDictionary<int, Task> _tasks = new();
-        private readonly ConcurrentDictionary<int, Task<List<string>>> _refreshLocksTasks = new();
+        private readonly ConcurrentDictionary<int, Task<ProcessResult>> _tasks = new();
+        private readonly ConcurrentDictionary<int, Task<ProcessResult>> _refreshLocksTasks = new();
         #endregion
         
         #region Public Methods
@@ -180,9 +180,18 @@ namespace GitTools.Editor
 
         private void WaitForTasks()
         {
-            Task.WaitAll(_tasks.Values.Concat(_refreshLocksTasks.Values).ToArray());
+            var tasks = new Task[_tasks.Count + _refreshLocksTasks.Count];
+            var i = 0;
+            
+            foreach (var task in _tasks.Values)
+                tasks[i++] = task;
             _tasks.Clear();
+            
+            foreach (var task in _refreshLocksTasks.Values)
+                tasks[i++] = task;
             _refreshLocksTasks.Clear();
+            
+            Task.WaitAll(tasks);
         }
         #endregion
 
@@ -286,9 +295,9 @@ namespace GitTools.Editor
             RefreshLocksImpl(task);
         }
         
-        private void RefreshLocksImpl(Task priorTask = null)
+        private void RefreshLocksImpl(Task<ProcessResult> priorTask = null)
         {
-            Task<List<string>> task;
+            Task<ProcessResult> task;
             if (priorTask == null)
             {
                 task = Task.Run(() => InvokeLfs("locks"));
@@ -298,9 +307,17 @@ namespace GitTools.Editor
                 task = priorTask.ContinueWith(t =>
                 {
                     _tasks.TryRemove(t.Id, out _);
+
+                    // if the priorTask had errors, then stop
+                    if (t.Result.ErrorLines != null)
+                        return default;
+                    
                     // if other tasks are in flight, then listing locks is a waste
                     // we only need to list locks after the last task is done
-                    return _tasks.Count > 0 ? null : InvokeLfs("locks");
+                    if (_tasks.Count > 0)
+                        return default;
+                    
+                    return InvokeLfs("locks");
                 });
             }
             _refreshLocksTasks[task.Id] = task;
@@ -308,8 +325,9 @@ namespace GitTools.Editor
             task.ContinueWith(t =>
             {
                 _refreshLocksTasks.TryRemove(t.Id, out _);
-                if (t.Result != null)
-                    ProcessLocksResult(t.Result);
+                
+                if (t.Result.OutLines != null)
+                    ProcessLocksResult(t.Result.OutLines);
             },
             TaskScheduler.FromCurrentSynchronizationContext());
         }
@@ -433,7 +451,7 @@ namespace GitTools.Editor
             }
         }
 
-        private List<string> InvokeLfs(string args)
+        private ProcessResult InvokeLfs(string args)
         {
             using var process = new Process
             {
@@ -441,22 +459,34 @@ namespace GitTools.Editor
                 {
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     WorkingDirectory = _repoRootPath,
                 },
             };
-            
-            var outputLines = new List<string>();
+
+            var processResult = new ProcessResult();
             process.OutputDataReceived += (_, eventArgs) =>
             {
                 if (string.IsNullOrEmpty(eventArgs.Data))
                     return;
-                outputLines.Add(eventArgs.Data);
+                processResult.OutLines ??= new List<string>();
+                processResult.OutLines.Add(eventArgs.Data);
+            };
+            process.ErrorDataReceived += (_, eventArgs) =>
+            {
+                if (string.IsNullOrEmpty(eventArgs.Data))
+                    return;
+                Debug.LogError($"[Git] LfsCommand=\"{args}\"" +
+                               $"|Error=\"{eventArgs.Data}\"");
+                processResult.ErrorLines ??= new List<string>();
+                processResult.ErrorLines.Add(eventArgs.Data);
             };
             try
             {
                 process.Start();
                 process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
                 process.WaitForExit(ProcessTimeoutMs);
             }
             catch (Exception e)
@@ -466,9 +496,9 @@ namespace GitTools.Editor
                 // That's fine, git operations can just be re-triggered.
                 if (e is not ThreadAbortException)
                 {
-                    Debug.LogError($"[Git] Failed to run \"{_LfsProcessName} {args}\"\n" +
-                                   $"Exception: {e.GetType()}\n" +
-                                   $"Message: {e.Message}");
+                    Debug.LogError($"[Git] LfsCommand=\"{args}\"" +
+                                   $"|Exception={e.GetType()}" +
+                                   $"|Message=\"{e.Message}\"");
                     throw;
                 }
                 
@@ -476,7 +506,7 @@ namespace GitTools.Editor
                 // the user can redo it, it's low stakes enough
                 Thread.ResetAbort();
             }
-            return outputLines;
+            return processResult;
         }
 
         private void CacheLfsProcess()
