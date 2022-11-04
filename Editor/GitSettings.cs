@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -49,6 +50,16 @@ namespace GitTools.Editor
         // locks events
         public static event Action LocksRefreshed;
         public static event Action<LfsLock> LockStatusChanged;
+        #endregion
+        
+        #region Private Properties
+        // example "git lfs locks" result for cloud service (e.g. GitHub.com) and
+        // self-hosted service with SSO, respectively
+        // Assets/foo.png   	username                	ID:123456
+        // Assets/foobar.png	Foo Bar (fbar@example.com)	ID:123456
+        private static Regex LocksResultRegex { get; } = new (
+            "^(?<path>.+)\t+(.+\\((?<user>\\S+)\\@\\S+\\)|(?<user>.+))\t+ID\\:(?<id>\\S+)$", 
+            RegexOptions.Compiled);
         #endregion
         
         #region Private Fields
@@ -338,14 +349,14 @@ namespace GitTools.Editor
             
             foreach (var result in results)
             {
-                // this is an example of a result:
-                // Assets/foo.png	mikerochip	ID:1436853
-                var parts = result.Split('\t');
+                var match = LocksResultRegex.Match(result);
                 var lfsLock = new LfsLock
                 {
-                    _Path = parts[0].Trim(),
-                    _User = parts[1].Trim(),
-                    _Id = parts[2].Trim().Replace("ID:", ""),
+                    // git lfs locks uses spaces for format padding, and I couldn't
+                    // figure out how to trim those spaces in the regex. 
+                    _Path = match.Groups["path"].Value.TrimEnd(),
+                    _User = match.Groups["user"].Value.TrimEnd(),
+                    _Id = match.Groups["id"].Value,
                 };
                 lfsLock._AssetGuid = AssetDatabase.AssetPathToGUID(lfsLock._Path);
                 _Locks.Add(lfsLock);
