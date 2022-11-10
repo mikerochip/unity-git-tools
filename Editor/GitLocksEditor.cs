@@ -116,7 +116,7 @@ namespace GitTools.Editor
                 EditorGUILayout.LabelField("Locks", EditorStyles.boldLabel, GUILayout.MaxWidth(150.0f));
                 
                 if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
-                    GitSettings.RefreshLocks();
+                    GitSettings.ForceRefreshLocks();
             }
                 
             GUILayout.FlexibleSpace();

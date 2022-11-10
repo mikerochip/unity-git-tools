@@ -101,6 +101,24 @@ namespace GitTools.Editor
             instance.RefreshLocksImpl();
         }
 
+        public static void ForceRefreshLocks()
+        {
+            const string title = "Refresh Git Locks";
+            
+            EditorUtility.DisplayProgressBar(title, "Clearing cache", 0.0f);
+            instance._Locks.Clear();
+            LocksRefreshed?.Invoke();
+            
+            EditorUtility.DisplayProgressBar(title, "Waiting for Git tasks", 0.3f);
+            instance.WaitForTasks();
+            
+            EditorUtility.DisplayProgressBar(title, "Requesting locks", 0.6f);
+            var result = instance.InvokeLfs("locks");
+            instance.ProcessLocksResult(result.OutLines);
+            
+            EditorUtility.ClearProgressBar();
+        }
+
         public static void SortLocks(LfsLockSortType type, bool ascending)
         {
             instance._LockSortType = type;
@@ -336,9 +354,7 @@ namespace GitTools.Editor
             task.ContinueWith(t =>
             {
                 _refreshLocksTasks.TryRemove(t.Id, out _);
-                
-                if (t.Result.OutLines != null)
-                    ProcessLocksResult(t.Result.OutLines);
+                ProcessLocksResult(t.Result.OutLines);
             },
             TaskScheduler.FromCurrentSynchronizationContext());
         }
@@ -346,18 +362,21 @@ namespace GitTools.Editor
         private void ProcessLocksResult(List<string> results)
         {
             _Locks.Clear();
-            
-            foreach (var result in results)
+
+            if (results != null)
             {
-                var match = LocksResultRegex.Match(result);
-                var lfsLock = new LfsLock
+                foreach (var result in results)
                 {
-                    _Path = match.Groups["path"].Value,
-                    _User = match.Groups["user"].Value,
-                    _Id = match.Groups["id"].Value,
-                };
-                lfsLock._AssetGuid = AssetDatabase.AssetPathToGUID(lfsLock._Path);
-                _Locks.Add(lfsLock);
+                    var match = LocksResultRegex.Match(result);
+                    var lfsLock = new LfsLock
+                    {
+                        _Path = match.Groups["path"].Value,
+                        _User = match.Groups["user"].Value,
+                        _Id = match.Groups["id"].Value,
+                    };
+                    lfsLock._AssetGuid = AssetDatabase.AssetPathToGUID(lfsLock._Path);
+                    _Locks.Add(lfsLock);
+                }
             }
 
             SortLocksImpl();
