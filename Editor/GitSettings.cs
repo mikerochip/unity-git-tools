@@ -54,11 +54,11 @@ namespace GitTools.Editor
         
         #region Private Properties
         // example "git lfs locks" result for cloud service (e.g. GitHub.com) and
-        // self-hosted service with SSO, respectively
+        // self-hosted service, respectively
         // Assets/foo.png   	username                	ID:123456
         // Assets/foobar.png	Foo Bar (fbar@example.com)	ID:123456
         private static Regex LocksResultRegex { get; } = new (
-            "^(?<path>.+)\t+(.+\\((?<user>\\S+)\\@\\S+\\)|(?<user>.+))\t+ID\\:(?<id>\\S+)$", 
+            @"^(?<path>.+)\b\s*\t(.+\((?<user>\S+)@\S+\)|(?<user>\S+))\s*\tID:(?<id>\S+)$", 
             RegexOptions.Compiled);
         #endregion
         
@@ -352,10 +352,8 @@ namespace GitTools.Editor
                 var match = LocksResultRegex.Match(result);
                 var lfsLock = new LfsLock
                 {
-                    // git lfs locks uses spaces for format padding, and I couldn't
-                    // figure out how to trim those spaces in the regex. 
-                    _Path = match.Groups["path"].Value.TrimEnd(),
-                    _User = match.Groups["user"].Value.TrimEnd(),
+                    _Path = match.Groups["path"].Value,
+                    _User = match.Groups["user"].Value,
                     _Id = match.Groups["id"].Value,
                 };
                 lfsLock._AssetGuid = AssetDatabase.AssetPathToGUID(lfsLock._Path);
