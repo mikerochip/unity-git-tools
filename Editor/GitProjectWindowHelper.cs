@@ -36,6 +36,10 @@ namespace GitTools.Editor
         
         private static void ProjectWindowItemOnGUI(string guid, Rect selectionRect)
         {
+            // the item for the Packages folder has an empty guid, for instance
+            if (string.IsNullOrEmpty(guid))
+                return;
+            
             var lfsLock = GitSettings.Locks.FirstOrDefault(lfsLock => lfsLock._AssetGuid == guid);
             if (lfsLock == null)
                 return;
