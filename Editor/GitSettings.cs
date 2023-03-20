@@ -515,7 +515,19 @@ namespace GitTools.Editor
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
-                process.WaitForExit(ProcessTimeoutMs);
+                if (!process.WaitForExit(ProcessTimeoutMs))
+                {
+                    // Process is still going, kill it. To prevent a shutdown race condition,
+                    // we have to try/catch.
+                    // See https://blog.yaakov.online/waiting-for-a-process-with-timeout-in-net/
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -534,6 +546,13 @@ namespace GitTools.Editor
                 // the user can redo it, it's low stakes enough
                 Thread.ResetAbort();
             }
+
+            // We call this again to wait for async events to finish.
+            // See https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Process.WaitForExit
+            // "To ensure that asynchronous event handling has been completed, call the
+            // WaitForExit() overload that takes no parameter after receiving a true from
+            // this overload."
+            process.WaitForExit();
             return processResult;
         }
 
