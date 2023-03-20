@@ -33,7 +33,6 @@ namespace GitTools.Editor
         
         // in-memory configuration data
         public static int MaxLockItems { get; set; } = 50;
-        public static int ProcessTimeoutMs { get; set; } = 30_000;
 
         // core data
         public static bool IsGitRepo => !string.IsNullOrEmpty(instance._repoRootPath);
@@ -64,6 +63,7 @@ namespace GitTools.Editor
         
         #region Private Fields
         private const double UpdateInterval = 30.0f;
+        private const int ProcessTimeoutMs = 30_000;
 
         [SerializeField] private string _Username;
         [SerializeField] private string _LfsProcessName = "";
@@ -76,6 +76,7 @@ namespace GitTools.Editor
         private string _branch;
         private bool _hasLfsConfig;
         private double _lastUpdateTime;
+        private bool _stopAutoRefreshLocks;
         private readonly ConcurrentDictionary<int, Task<ProcessResult>> _tasks = new();
         private readonly ConcurrentDictionary<int, Task<ProcessResult>> _refreshLocksTasks = new();
         #endregion
@@ -114,7 +115,7 @@ namespace GitTools.Editor
             
             EditorUtility.DisplayProgressBar(title, "Requesting locks", 0.6f);
             var result = instance.InvokeLfs("locks");
-            instance.ProcessLocksResult(result.OutLines);
+            instance.ProcessLocksResult(result);
             
             EditorUtility.ClearProgressBar();
         }
@@ -130,6 +131,8 @@ namespace GitTools.Editor
         #region Unity Methods
         private void OnEnable()
         {
+            _stopAutoRefreshLocks = false;
+            
             LoadRepoInfo();
             CacheLfsProcess();
             
@@ -153,9 +156,11 @@ namespace GitTools.Editor
                 return;
 
             _lastUpdateTime = now;
-            
+
             LoadBranch();
-            RefreshLocksImpl();
+            
+            if (!AreLocksRefreshing && !_stopAutoRefreshLocks)
+                RefreshLocksImpl();
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
@@ -180,7 +185,9 @@ namespace GitTools.Editor
 
             LoadRepoInfo();
             CacheLfsProcess();
-            RefreshLocksImpl();
+            
+            if (!AreLocksRefreshing && !_stopAutoRefreshLocks)
+                RefreshLocksImpl();
         }
         
         // see http://answers.unity.com/answers/1886639/view.html
@@ -338,13 +345,13 @@ namespace GitTools.Editor
                     _tasks.TryRemove(t.Id, out _);
 
                     // if the priorTask had errors, then stop
-                    if (t.Result.ErrorLines != null)
-                        return default;
+                    if (t.Result.ErrorLines.Count > 0)
+                        return null;
                     
                     // if other tasks are in flight, then listing locks is a waste
                     // we only need to list locks after the last task is done
                     if (_tasks.Count > 0)
-                        return default;
+                        return null;
                     
                     return InvokeLfs("locks");
                 });
@@ -354,20 +361,26 @@ namespace GitTools.Editor
             task.ContinueWith(t =>
             {
                 _refreshLocksTasks.TryRemove(t.Id, out _);
-                ProcessLocksResult(t.Result.OutLines);
+                ProcessLocksResult(t.Result);
             },
             TaskScheduler.FromCurrentSynchronizationContext());
         }
 
-        private void ProcessLocksResult(List<string> results)
+        private void ProcessLocksResult(ProcessResult result)
         {
             _Locks.Clear();
 
-            if (results != null)
+            if (result == null || result.ErrorLines.Count > 0)
             {
-                foreach (var result in results)
+                _stopAutoRefreshLocks = true;
+            }
+            else
+            {
+                _stopAutoRefreshLocks = false;
+                
+                foreach (var line in result.OutLines)
                 {
-                    var match = LocksResultRegex.Match(result);
+                    var match = LocksResultRegex.Match(line);
                     var lfsLock = new LfsLock
                     {
                         _Path = match.Groups["path"].Value,
@@ -377,9 +390,9 @@ namespace GitTools.Editor
                     lfsLock._AssetGuid = AssetDatabase.AssetPathToGUID(lfsLock._Path);
                     _Locks.Add(lfsLock);
                 }
+                
+                SortLocksImpl();
             }
-
-            SortLocksImpl();
 
             Save();
             
@@ -498,16 +511,13 @@ namespace GitTools.Editor
             {
                 if (string.IsNullOrEmpty(eventArgs.Data))
                     return;
-                processResult.OutLines ??= new List<string>();
                 processResult.OutLines.Add(eventArgs.Data);
             };
             process.ErrorDataReceived += (_, eventArgs) =>
             {
                 if (string.IsNullOrEmpty(eventArgs.Data))
                     return;
-                Debug.LogError($"[Git] LfsCommand=\"{args}\"" +
-                               $"|Error=\"{eventArgs.Data}\"");
-                processResult.ErrorLines ??= new List<string>();
+                Debug.LogError($"[Git] LfsCommand=\"{args}\"|Error=\"{eventArgs.Data}\"");
                 processResult.ErrorLines.Add(eventArgs.Data);
             };
             try
@@ -522,7 +532,11 @@ namespace GitTools.Editor
                     // See https://blog.yaakov.online/waiting-for-a-process-with-timeout-in-net/
                     try
                     {
+                        var error = $"Timed out after {ProcessTimeoutMs / 1000.0f}s";
+                        Debug.LogError($"[Git] LfsCommand=\"{args}\"|Error=\"{error}\"");
+                        processResult.ErrorLines.Add(error);
                         process.Kill();
+                        return processResult;
                     }
                     catch (InvalidOperationException)
                     {

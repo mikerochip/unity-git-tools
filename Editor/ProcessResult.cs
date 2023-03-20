@@ -2,9 +2,9 @@ using System.Collections.Generic;
 
 namespace GitTools.Editor
 {
-    public struct ProcessResult
+    public class ProcessResult
     {
-        public List<string> OutLines { get; set; }
-        public List<string> ErrorLines { get; set; }
+        public List<string> OutLines { get; set; } = new List<string>();
+        public List<string> ErrorLines { get; set; } = new List<string>();
     }
 }
