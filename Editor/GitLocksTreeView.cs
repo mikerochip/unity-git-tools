@@ -7,7 +7,7 @@ using UnityEngine;
 
 using Object = UnityEngine.Object;
 
-namespace GitTools.Editor
+namespace MikeSchweitzer.Git.Editor
 {
     public class GitLocksTreeView : TreeView
     {

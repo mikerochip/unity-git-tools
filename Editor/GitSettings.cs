@@ -13,7 +13,7 @@ using UnityEngine;
 
 using Debug = UnityEngine.Debug;
 
-namespace GitTools.Editor
+namespace MikeSchweitzer.Git.Editor
 {
     [FilePath("UserSettings/Git/Settings.asset", FilePathAttribute.Location.ProjectFolder)]
     public class GitSettings : ScriptableSingleton<GitSettings>

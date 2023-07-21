@@ -1,5 +1,5 @@
 {
-  "name": "com.mikerochip.git-tools",
+  "name": "com.mikeschweitzer.git-tools",
   "version": "1.0.0",
   "displayName": "Git Tools",
   "description": "Improve your Unity project's Git integration, mostly for LFS locks",
@@ -11,7 +11,7 @@
   ],
   "author": {
     "name": "Mike Schweitzer",
-    "email": "mschweitzer@gmail.com",
+    "email": "mike@mikeschweitzer.com",
     "url": "https://github.com/mikerochip/unity-git-tools"
   }
 }

@@ -27,7 +27,7 @@ Branch name can be accessed with ```GitSettings.Branch```
 Showing it inside the toolbar is possible with the awesome [unity-toolbar-extender](https://github.com/marijnz/unity-toolbar-extender):
 
 ```C#
-using GitTools.Editor;
+using MikeSchweitzer.Git.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityToolbarExtender;

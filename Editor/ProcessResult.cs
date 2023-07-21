@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace GitTools.Editor
+namespace MikeSchweitzer.Git.Editor
 {
     public class ProcessResult
     {

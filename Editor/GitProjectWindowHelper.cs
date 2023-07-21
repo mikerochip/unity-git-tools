@@ -2,7 +2,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace GitTools.Editor
+namespace MikeSchweitzer.Git.Editor
 {
     [InitializeOnLoad]
     public class GitProjectWindowHelper

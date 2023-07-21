@@ -1,6 +1,6 @@
 {
-    "name": "GitTools.Editor",
-    "rootNamespace": "GitTools.Editor",
+    "name": "MikeSchweitzer.Git.Editor",
+    "rootNamespace": "MikeSchweitzer.Git.Editor",
     "references": [],
     "optionalUnityReferences": [],
     "includePlatforms": [

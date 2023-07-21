@@ -1,4 +1,4 @@
-namespace GitTools.Editor
+namespace MikeSchweitzer.Git.Editor
 {
     public enum LfsLockSortType
     {

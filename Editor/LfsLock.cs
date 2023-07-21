@@ -1,6 +1,6 @@
 using System;
 
-namespace GitTools.Editor
+namespace MikeSchweitzer.Git.Editor
 {
     [Serializable]
     public class LfsLock

@@ -1,9 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace GitTools.Editor
+namespace MikeSchweitzer.Git.Editor
 {
     [FilePath("UserSettings/Git/LocksEditorSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     public class GitLocksEditorSettings : ScriptableSingleton<GitLocksEditorSettings>
