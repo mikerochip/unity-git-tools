@@ -1,5 +1,7 @@
 # Unity Git Tools
 
+[![Unity Version](https://img.shields.io/badge/Unity-2020.1%2B-blueviolet?logo=unity)](https://unity.com/releases/editor/archive)
+
 Improve your Unity project's Git integration with this package. Mostly helps you manage Git LFS Locks in the editor.
 
 # How to Use
