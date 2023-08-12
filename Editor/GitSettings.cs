@@ -290,7 +290,13 @@ namespace MikeSchweitzer.Git.Editor
                 throw new Exception($"[Git] Failed to load Git config \"{configPath}\"");
 
             var text = File.ReadAllText(configPath);
-            _hasLfsConfig = text.Contains("[lfs]");
+            
+            // older versions of LFS do not have
+            // [lfs]
+            // 
+            // but all versions have
+            // [lfs "https://foo.com/bar/repo.git/info/lfs"]
+            _hasLfsConfig = text.Contains("[lfs");
         }
         #endregion
         
