@@ -494,16 +494,14 @@ namespace MikeSchweitzer.Git.Editor
 
         private ProcessResult InvokeLfs(string args)
         {
-            using var process = new Process
+            using var process = new Process();
+            process.StartInfo = new ProcessStartInfo(_LfsProcessName, args)
             {
-                StartInfo = new ProcessStartInfo(_LfsProcessName, args)
-                {
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    WorkingDirectory = _repoRootPath,
-                },
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                WorkingDirectory = _repoRootPath,
             };
 
             var processResult = new ProcessResult();
@@ -580,13 +578,11 @@ namespace MikeSchweitzer.Git.Editor
             {
                 _LfsProcessName = "git-lfs";
                 
-                using var process = new Process
+                using var process = new Process();
+                process.StartInfo = new ProcessStartInfo(_LfsProcessName, "version")
                 {
-                    StartInfo = new ProcessStartInfo(_LfsProcessName, "version")
-                    {
-                        CreateNoWindow = true,
-                        UseShellExecute = false,
-                    },
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
                 };
                 try
                 {
