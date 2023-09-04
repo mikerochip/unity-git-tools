@@ -73,6 +73,9 @@ namespace MikeSchweitzer.Git.Editor
         [SerializeField] private bool _LockSortAscending;
 
         private string _repoRootPath;
+        private string _repoGitPath;
+        private string _repoLfsPath;
+        private string _lockCacheFilePath;
         private string _branch;
         private bool _hasLfsConfig;
         private double _lastUpdateTime;
@@ -255,6 +258,9 @@ namespace MikeSchweitzer.Git.Editor
                 var gitPath = Path.Combine(directory.FullName, ".git");
                 if (Directory.Exists(gitPath))
                 {
+                    _repoGitPath = gitPath;
+                    _repoLfsPath = Path.Combine(_repoGitPath, "lfs");
+                    _lockCacheFilePath = Path.Combine(_repoLfsPath, "lockcache.db");
                     _repoRootPath = directory.FullName;
                     break;
                 }
@@ -500,8 +506,7 @@ namespace MikeSchweitzer.Git.Editor
 
         private ProcessResult InvokeLfs(string args)
         {
-            using var process = new Process();
-            process.StartInfo = new ProcessStartInfo(_LfsProcessName, args)
+            var startInfo = new ProcessStartInfo(_LfsProcessName, args)
             {
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -510,68 +515,104 @@ namespace MikeSchweitzer.Git.Editor
                 WorkingDirectory = _repoRootPath,
             };
 
-            var processResult = new ProcessResult();
-            process.OutputDataReceived += (_, eventArgs) =>
+            ProcessResult result;
+            var attempts = 0;
+            do
             {
-                if (string.IsNullOrEmpty(eventArgs.Data))
-                    return;
-                processResult.OutLines.Add(eventArgs.Data);
-            };
-            process.ErrorDataReceived += (_, eventArgs) =>
-            {
-                if (string.IsNullOrEmpty(eventArgs.Data))
-                    return;
-                Debug.LogError($"[Git] LfsCommand=\"{args}\"|Error=\"{eventArgs.Data}\"");
-                processResult.ErrorLines.Add(eventArgs.Data);
-            };
-            try
-            {
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                if (!process.WaitForExit(ProcessTimeoutMs))
-                {
-                    // Process is still going, kill it. To prevent a shutdown race condition,
-                    // we have to try/catch.
-                    // See https://blog.yaakov.online/waiting-for-a-process-with-timeout-in-net/
-                    try
-                    {
-                        var error = $"Timed out after {ProcessTimeoutMs / 1000.0f}s";
-                        Debug.LogError($"[Git] LfsCommand=\"{args}\"|Error=\"{error}\"");
-                        processResult.ErrorLines.Add(error);
-                        process.Kill();
-                        return processResult;
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                // Don't log ThreadAbortException since this means the engine is killing
-                // our thread in order to do domain reloads or other engine-y things.
-                // That's fine, git operations can just be re-triggered.
-                if (e is not ThreadAbortException)
-                {
-                    Debug.LogError($"[Git] LfsCommand=\"{args}\"" +
-                                   $"|Exception={e.GetType()}" +
-                                   $"|Message=\"{e.Message}\"");
-                    throw;
-                }
-                
-                // also don't stop the train for the fact that a git lfs command failed,
-                // the user can redo it, it's low stakes enough
-                Thread.ResetAbort();
-            }
+                result = RunLfsProcess();
 
-            // We call this again to wait for async events to finish.
-            // See https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Process.WaitForExit
-            // "To ensure that asynchronous event handling has been completed, call the
-            // WaitForExit() overload that takes no parameter after receiving a true from
-            // this overload."
-            process.WaitForExit();
-            return processResult;
+                if (!result.ErrorLines.Any(line => line.Contains("lockcache.db")))
+                    break;
+
+                try
+                {
+                    File.Delete(_lockCacheFilePath);
+                }
+                catch (IOException e)
+                {
+                    result.ErrorLines.Add($"Failed to delete lockcache.db after {attempts + 1} attempts. " +
+                                          $"Reason: {e.Message}");
+                }
+
+                ++attempts;
+            } while (attempts < 2);
+
+            foreach (var error in result.ErrorLines)
+                Debug.LogError($"[Git] LfsCommand=\"{args}\"|Error=\"{error}\"");
+
+            return result;
+
+            ProcessResult RunLfsProcess()
+            {
+                using var process = new Process();
+                process.StartInfo = startInfo;
+
+                var processResult = new ProcessResult();
+                process.OutputDataReceived += (_, eventArgs) =>
+                {
+                    if (string.IsNullOrEmpty(eventArgs.Data))
+                        return;
+                    processResult.OutLines.Add(eventArgs.Data);
+                };
+                process.ErrorDataReceived += (_, eventArgs) =>
+                {
+                    if (string.IsNullOrEmpty(eventArgs.Data))
+                        return;
+                    processResult.ErrorLines.Add(eventArgs.Data);
+                };
+                try
+                {
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    if (process.WaitForExit(ProcessTimeoutMs))
+                    {
+                        // We call this again to wait for async events to finish.
+                        // See https://learn.microsoft.com/en-us/dotnet/api/System.Diagnostics.Process.WaitForExit
+                        // "To ensure that asynchronous event handling has been completed, call the
+                        // WaitForExit() overload that takes no parameter after receiving a true from
+                        // this overload."
+                        process.WaitForExit();
+                    }
+                    else
+                    {
+                        // Process is still going, kill it. To prevent a shutdown race condition,
+                        // we have to try/catch.
+                        // See https://blog.yaakov.online/waiting-for-a-process-with-timeout-in-net/
+                        try
+                        {
+                            var error = $"Timed out after {ProcessTimeoutMs / 1000.0f}s";
+                            Debug.LogError($"[Git] LfsCommand=\"{args}\"|Error=\"{error}\"");
+                            processResult.ErrorLines.Add(error);
+                            process.Kill();
+                            return processResult;
+                        }
+                        catch (InvalidOperationException)
+                        {
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    // Don't log ThreadAbortException since this means the engine is killing
+                    // our thread in order to do domain reloads or other engine-y things.
+                    // That's fine, git operations can just be re-triggered.
+                    if (e is not ThreadAbortException)
+                    {
+
+                        Debug.LogError($"[Git] LfsCommand=\"{args}\"" +
+                                       $"|Exception={e.GetType()}" +
+                                       $"|Message=\"{e.Message}\"");
+                        throw;
+                    }
+
+                    // also don't stop the train for the fact that a git lfs command failed,
+                    // the user can redo it, it's low stakes enough
+                    Thread.ResetAbort();
+                }
+
+                return processResult;
+            }
         }
 
         private void CacheLfsProcess()
