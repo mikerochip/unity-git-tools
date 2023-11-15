@@ -193,7 +193,7 @@ namespace MikeSchweitzer.Git.Editor
                 RefreshLocksImpl();
         }
 
-        // see http://answers.unity.com/answers/1886639/view.html
+        // see https://discussions.unity.com/t/a-way-to-detect-when-the-editor-application-is-focused/174507/6
         private static Action<bool> UnityEditorFocusChanged
         {
             get
