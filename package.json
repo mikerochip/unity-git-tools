@@ -2,7 +2,7 @@
   "name": "com.mikeschweitzer.git-tools",
   "version": "1.0.1",
   "displayName": "Git Tools",
-  "description": "Improve your Unity project's Git integration, mostly for LFS locks",
+  "description": "Add Git integrations to your project, mostly LFS locks",
   "unity": "2020.1",
   "unityRelease": "0f1",
   "keywords": [
