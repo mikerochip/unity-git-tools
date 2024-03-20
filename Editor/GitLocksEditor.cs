@@ -109,7 +109,7 @@ namespace MikeSchweitzer.Git.Editor
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             var autoRefreshContent = new GUIContent("Auto Refresh",
-                $"Automatically check for LFS locks every {GitSettings.UpdateInterval} seconds");
+                $"Automatically check for Git LFS locks every {GitSettings.UpdateInterval} seconds.");
             GitSettings.ShouldAutoRefreshLocks = EditorGUILayout.ToggleLeft(autoRefreshContent,
                 GitSettings.ShouldAutoRefreshLocks,
                 GUILayout.Width(100.0f));
@@ -119,7 +119,7 @@ namespace MikeSchweitzer.Git.Editor
             using (new EditorGUI.DisabledScope(!GitSettings.HasUsername))
             {
                 var refreshNowContent = new GUIContent("Force Refresh",
-                    "Manually force a refresh of LFS locks instead of waiting for an auto refresh.");
+                    "Force a refresh of Git LFS locks now.");
                 if (GUILayout.Button(refreshNowContent, EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                     GitSettings.ForceRefreshLocks();
             }
@@ -143,7 +143,7 @@ namespace MikeSchweitzer.Git.Editor
             LayoutCenteredMessageHeader();
 
             EditorGUILayout.HelpBox(
-                "Failed to run Git LFS.\nYou need LFS to manage locks.",
+                "Failed to run Git LFS.\nGit LFS needs to be installed on your machine to manage locks.",
                 MessageType.Error);
 
             LayoutCenteredMessageFooter();
@@ -154,7 +154,7 @@ namespace MikeSchweitzer.Git.Editor
             LayoutCenteredMessageHeader();
 
             EditorGUILayout.HelpBox(
-                "Failed to find [lfs] in Git config.\nYou need LFS to manage locks.",
+                "Failed to find [lfs] in Git config.\nGit LFS needs to be installed in this repo to manage locks.",
                 MessageType.Warning);
 
             LayoutCenteredMessageFooter();
@@ -183,7 +183,7 @@ namespace MikeSchweitzer.Git.Editor
         {
             EditorGUILayout.Space();
 
-            EditorGUILayout.HelpBox("Refreshing Locks...", MessageType.Info);
+            EditorGUILayout.HelpBox("Refreshing Git LFS Locks...", MessageType.Info);
 
             EditorGUILayout.Space();
         }
