@@ -9,8 +9,6 @@ namespace MikeSchweitzer.Git.Editor
     public class GitLocksEditor : EditorWindow, IHasCustomMenu
     {
         #region Private Fields
-        private static bool _stylesInitialized;
-        private static GUIStyle _titleStyle;
         private MultiColumnHeaderState _multiColumnHeaderState;
         private MultiColumnHeader _multiColumnHeader;
         private TreeViewState _locksTreeViewState = new TreeViewState();
@@ -41,10 +39,6 @@ namespace MikeSchweitzer.Git.Editor
 
         private void OnGUI()
         {
-            InitStyles();
-
-            LayoutTitle();
-
             LayoutRefreshControls();
 
             if (!GitSettings.IsGitRepo)
@@ -108,30 +102,6 @@ namespace MikeSchweitzer.Git.Editor
             _multiColumnHeader = new MultiColumnHeader(_multiColumnHeaderState);
 
             _locksTreeView = new GitLocksTreeView(_locksTreeViewState, _multiColumnHeader);
-        }
-
-        private static void InitStyles()
-        {
-            if (_stylesInitialized)
-                return;
-
-            _stylesInitialized = true;
-
-            _titleStyle = new GUIStyle(EditorStyles.largeLabel)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fontSize = 15,
-                fontStyle = FontStyle.Bold,
-            };
-        }
-
-        private void LayoutTitle()
-        {
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-
-            EditorGUILayout.LabelField("Git LFS Locks", _titleStyle);
-
-            EditorGUILayout.EndHorizontal();
         }
 
         private void LayoutRefreshControls()
