@@ -9,7 +9,8 @@ namespace MikeSchweitzer.Git.Editor
     public class GitLocksEditor : EditorWindow, IHasCustomMenu
     {
         #region Private Fields
-        private Texture _loadingIcon;
+        private static bool _stylesInitialized;
+        private static GUIStyle _titleStyle;
         private MultiColumnHeaderState _multiColumnHeaderState;
         private MultiColumnHeader _multiColumnHeader;
         private TreeViewState _locksTreeViewState = new TreeViewState();
@@ -30,17 +31,21 @@ namespace MikeSchweitzer.Git.Editor
         private void OnEnable()
         {
             InitializeTree();
-            
+
             if (GitSettings.Locks.Any())
                 _locksTreeView.Reload();
-            
+
             GitSettings.LocksRefreshed += OnLocksRefreshed;
             GitSettings.LockStatusChanged += OnLockStatusChanged;
         }
 
         private void OnGUI()
         {
-            LayoutHeader();
+            InitStyles();
+
+            LayoutTitle();
+
+            LayoutRefreshControls();
 
             if (!GitSettings.IsGitRepo)
                 LayoutNonGitRepo();
@@ -81,13 +86,13 @@ namespace MikeSchweitzer.Git.Editor
             {
                 var column = LfsLockColumnData.Columns[i].Column;
                 columns[i] = column;
-                
+
                 if (LfsLockColumnData.Columns[i].IsDefaultVisible)
                     visibleColumns.Add(i);
-                
+
                 if (!column.canSort)
                     continue;
-                
+
                 sortedColumns.Add(i);
                 if (GitSettings.LockSortType == (LfsLockSortType)column.userData)
                     sortedColumnIndex = i;
@@ -101,70 +106,101 @@ namespace MikeSchweitzer.Git.Editor
                 visibleColumns = visibleColumns.ToArray(),
             };
             _multiColumnHeader = new MultiColumnHeader(_multiColumnHeaderState);
-            
+
             _locksTreeView = new GitLocksTreeView(_locksTreeViewState, _multiColumnHeader);
         }
 
-        private void LayoutHeader()
+        private static void InitStyles()
+        {
+            if (_stylesInitialized)
+                return;
+
+            _stylesInitialized = true;
+
+            _titleStyle = new GUIStyle(EditorStyles.largeLabel)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                fontSize = 15,
+                fontStyle = FontStyle.Bold,
+            };
+        }
+
+        private void LayoutTitle()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-                
+
+            EditorGUILayout.LabelField("Git LFS Locks", _titleStyle);
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void LayoutRefreshControls()
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            var autoRefreshContent = new GUIContent("Auto Refresh",
+                $"Automatically check for LFS locks every {GitSettings.UpdateInterval} seconds");
+            GitSettings.ShouldAutoRefreshLocks = EditorGUILayout.ToggleLeft(autoRefreshContent,
+                GitSettings.ShouldAutoRefreshLocks,
+                GUILayout.Width(100.0f));
+
+            GUILayout.FlexibleSpace();
+
             using (new EditorGUI.DisabledScope(!GitSettings.HasUsername))
             {
-                EditorGUILayout.LabelField("Locks", EditorStyles.boldLabel, GUILayout.MaxWidth(150.0f));
-                
-                if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
+                var refreshNowContent = new GUIContent("Force Refresh",
+                    "Manually force a refresh of LFS locks instead of waiting for an auto refresh.");
+                if (GUILayout.Button(refreshNowContent, EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                     GitSettings.ForceRefreshLocks();
             }
-                
-            GUILayout.FlexibleSpace();
+
             EditorGUILayout.EndHorizontal();
         }
 
         private void LayoutNonGitRepo()
         {
             LayoutCenteredMessageHeader();
-            
+
             EditorGUILayout.HelpBox(
                 "This is not in a Git repo.",
                 MessageType.Error);
-            
+
             LayoutCenteredMessageFooter();
         }
 
         private void LayoutNoLfsProcess()
         {
             LayoutCenteredMessageHeader();
-            
+
             EditorGUILayout.HelpBox(
                 "Failed to run Git LFS.\nYou need LFS to manage locks.",
                 MessageType.Error);
-            
+
             LayoutCenteredMessageFooter();
         }
 
         private void LayoutNoLfsInRepo()
         {
             LayoutCenteredMessageHeader();
-            
+
             EditorGUILayout.HelpBox(
                 "Failed to find [lfs] in Git config.\nYou need LFS to manage locks.",
                 MessageType.Warning);
-            
+
             LayoutCenteredMessageFooter();
         }
 
         private void LayoutUsername()
         {
             LayoutCenteredMessageHeader();
-            
+
             EditorGUILayout.LabelField("Enter Git Username");
             EditorGUILayout.Space();
             GitSettings.Username = EditorGUILayout.DelayedTextField(GitSettings.Username);
-            
+
             LayoutCenteredMessageFooter();
         }
-        
+
         private void LayoutNoLocks()
         {
             if (GitSettings.AreLocksRefreshing)
@@ -172,13 +208,13 @@ namespace MikeSchweitzer.Git.Editor
             else
                 LayoutNothingLocked();
         }
-        
+
         private void LayoutRefreshingLocks()
         {
             EditorGUILayout.Space();
-            
+
             EditorGUILayout.HelpBox("Refreshing Locks...", MessageType.Info);
-            
+
             EditorGUILayout.Space();
         }
 
@@ -194,10 +230,10 @@ namespace MikeSchweitzer.Git.Editor
             EditorGUILayout.LabelField(content);
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-            
+
             EditorGUILayout.Space();
         }
-        
+
         private void LayoutLocks()
         {
             var rect = GUILayoutUtility.GetLastRect();
@@ -211,16 +247,16 @@ namespace MikeSchweitzer.Git.Editor
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            
+
             EditorGUILayout.BeginVertical();
             GUILayout.FlexibleSpace();
         }
-        
+
         private void LayoutCenteredMessageFooter()
         {
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndVertical();
-            
+
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }

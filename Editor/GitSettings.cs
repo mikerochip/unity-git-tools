@@ -18,6 +18,10 @@ namespace MikeSchweitzer.Git.Editor
     [FilePath("UserSettings/Git/Settings.asset", FilePathAttribute.Location.ProjectFolder)]
     public class GitSettings : ScriptableSingleton<GitSettings>
     {
+        #region Public Fields
+        public const double UpdateInterval = 30.0;
+        #endregion
+
         #region Public Properties
         // persistent configuration data
         public static string Username
@@ -41,10 +45,21 @@ namespace MikeSchweitzer.Git.Editor
         public static bool HasLfsInRepo => instance._hasLfsConfig;
 
         // locks data
+        public static bool ShouldAutoRefreshLocks
+        {
+            get => instance._AutoRefreshLocks;
+            set
+            {
+                instance._AutoRefreshLocks = value;
+                Save();
+            }
+        }
         public static IEnumerable<LfsLock> Locks => instance._Locks;
         public static LfsLockSortType LockSortType => instance._LockSortType;
-        public static bool IsLockSortAscending => instance._LockSortAscending;
         public static bool AreLocksRefreshing => instance._refreshLocksTasks.Count > 0;
+        public static bool CanRefreshLocks => !AreLocksRefreshing &&
+                                              ShouldAutoRefreshLocks &&
+                                              !instance._lastLocksResultErrored;
 
         // locks events
         public static event Action LocksRefreshed;
@@ -62,13 +77,13 @@ namespace MikeSchweitzer.Git.Editor
         #endregion
 
         #region Private Fields
-        private const double UpdateInterval = 30.0f;
         private const int ProcessTimeoutMs = 30_000;
 
         [SerializeField] private string _Username;
         [SerializeField] private string _LfsProcessName = "";
         [SerializeField] private bool _LfsProcessExists;
         [SerializeField] private List<LfsLock> _Locks = new();
+        [SerializeField] private bool _AutoRefreshLocks = true;
         [SerializeField] private LfsLockSortType _LockSortType;
         [SerializeField] private bool _LockSortAscending;
 
@@ -79,7 +94,7 @@ namespace MikeSchweitzer.Git.Editor
         private string _branch;
         private bool _hasLfsConfig;
         private double _lastUpdateTime;
-        private bool _stopAutoRefreshLocks;
+        private bool _lastLocksResultErrored;
         private readonly ConcurrentDictionary<int, Task<ProcessResult>> _tasks = new();
         private readonly ConcurrentDictionary<int, Task<ProcessResult>> _refreshLocksTasks = new();
         #endregion
@@ -134,7 +149,7 @@ namespace MikeSchweitzer.Git.Editor
         #region Unity Methods
         private void OnEnable()
         {
-            _stopAutoRefreshLocks = false;
+            _lastLocksResultErrored = false;
 
             LoadRepoInfo();
             CacheLfsProcess();
@@ -162,7 +177,7 @@ namespace MikeSchweitzer.Git.Editor
 
             LoadBranch();
 
-            if (!AreLocksRefreshing && !_stopAutoRefreshLocks)
+            if (CanRefreshLocks)
                 RefreshLocksImpl();
         }
 
@@ -189,7 +204,7 @@ namespace MikeSchweitzer.Git.Editor
             LoadRepoInfo();
             CacheLfsProcess();
 
-            if (!AreLocksRefreshing && !_stopAutoRefreshLocks)
+            if (CanRefreshLocks)
                 RefreshLocksImpl();
         }
 
@@ -384,11 +399,11 @@ namespace MikeSchweitzer.Git.Editor
 
             if (result == null || result.ErrorLines.Count > 0)
             {
-                _stopAutoRefreshLocks = true;
+                _lastLocksResultErrored = true;
             }
             else
             {
-                _stopAutoRefreshLocks = false;
+                _lastLocksResultErrored = false;
 
                 foreach (var line in result.OutLines)
                 {
