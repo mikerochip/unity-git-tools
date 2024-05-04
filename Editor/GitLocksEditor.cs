@@ -23,6 +23,13 @@ namespace MikeSchweitzer.Git.Editor
             window.Show();
             GitSettings.RefreshLocks();
         }
+
+        public static bool DisplayForceUnlockConfirmationDialog()
+        {
+            return EditorUtility.DisplayDialog("Warning",
+                "Are you sure you want to force unlock?",
+                "OK", "Cancel");
+        }
         #endregion
 
         #region Unity Methods
@@ -209,7 +216,7 @@ namespace MikeSchweitzer.Git.Editor
             var rect = GUILayoutUtility.GetLastRect();
             rect.y += rect.height;
             rect.width = position.width;
-            rect.height = position.height;
+            rect.height = position.height - rect.y;
             _locksTreeView.OnGUI(rect);
         }
 

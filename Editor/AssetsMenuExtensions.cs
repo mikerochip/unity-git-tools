@@ -116,6 +116,9 @@ namespace MikeSchweitzer.Git.Editor
         [MenuItem("Assets/Git Force Unlock", priority = 10_000)]
         private static void GitForceUnlock()
         {
+            if (!GitLocksEditor.DisplayForceUnlockConfirmationDialog())
+                return;
+
             var objects = GetDeepAssets();
             foreach (var obj in objects)
             {

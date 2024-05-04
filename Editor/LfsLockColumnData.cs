@@ -27,7 +27,7 @@ namespace MikeSchweitzer.Git.Editor
                 Type = LfsLockColumnType.Path,
                 Column = new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent("Asset Path"),
+                    headerContent = new GUIContent("Asset"),
                     userData = (int)LfsLockSortType.Path,
                     canSort = true,
                     allowToggleVisibility = false,

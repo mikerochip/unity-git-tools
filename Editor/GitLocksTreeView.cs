@@ -126,24 +126,30 @@ namespace MikeSchweitzer.Git.Editor
 
         private void AddContextMenuUnlockItems(GenericMenu menu)
         {
-            var lfsLocks = new List<LfsLock>();
-            var ownedLfsLocks = new List<LfsLock>();
+            var othersLocks = new List<LfsLock>();
+            var myLocks = new List<LfsLock>();
             foreach (var id in state.selectedIDs)
             {
-                var lfsLock = _locks[id];
+                // still can't quite track this down, but this has happened to me
+                var index = IdToIndex(id);
+                if (index >= _locks.Length)
+                    continue;
+
+                var lfsLock = _locks[index];
                 if (lfsLock._IsPending)
                     continue;
-                
-                lfsLocks.Add(lfsLock);
+
                 if (lfsLock._User == GitSettings.Username)
-                    ownedLfsLocks.Add(lfsLock);
+                    myLocks.Add(lfsLock);
+                else
+                    othersLocks.Add(lfsLock);
             }
 
-            if (ownedLfsLocks.Count > 0)
+            if (myLocks.Count > 0)
             {
                 menu.AddItem(new GUIContent("Unlock"), false, () =>
                 {
-                    foreach (var lfsLock in ownedLfsLocks)
+                    foreach (var lfsLock in myLocks)
                         GitSettings.Unlock(lfsLock._Id);
                 });
             }
@@ -152,11 +158,14 @@ namespace MikeSchweitzer.Git.Editor
                 menu.AddDisabledItem(new GUIContent("Unlock"), false);
             }
 
-            if (lfsLocks.Count > 0)
+            if (myLocks.Count > 0 || othersLocks.Count > 0)
             {
                 menu.AddItem(new GUIContent("Force Unlock"), false, () =>
                 {
-                    foreach (var lfsLock in lfsLocks)
+                    if (!GitLocksEditor.DisplayForceUnlockConfirmationDialog())
+                        return;
+
+                    foreach (var lfsLock in myLocks.Concat(othersLocks))
                         GitSettings.ForceUnlock(lfsLock._Id);
                 });
             }
