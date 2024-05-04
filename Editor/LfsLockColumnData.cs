@@ -54,6 +54,6 @@ namespace MikeSchweitzer.Git.Editor
                 },
             },
         };
-        
+
     }
 }
