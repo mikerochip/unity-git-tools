@@ -39,7 +39,7 @@ namespace MikeSchweitzer.Git.Editor
             {
                 var item = new TreeViewItem
                 {
-                    id = i,
+                    id = IndexToId(i),
                     displayName = i.ToString(),
                 };
                 root.AddChild(item);
@@ -52,8 +52,8 @@ namespace MikeSchweitzer.Git.Editor
 
         protected override void RowGUI(RowGUIArgs args)
         {
-            var lfsLock = _locks[args.item.id];
-            
+            var lfsLock = _locks[args.row];
+
             EditorGUI.BeginDisabledGroup(lfsLock._IsPending);
             
             for (var i = 0; i < args.GetNumVisibleColumns(); ++i)
@@ -121,6 +121,9 @@ namespace MikeSchweitzer.Git.Editor
         #endregion
 
         #region Private Methods
+        private static int IndexToId(int index) => index + 1;
+        private static int IdToIndex(int id) => id - 1;
+
         private void AddContextMenuUnlockItems(GenericMenu menu)
         {
             var lfsLocks = new List<LfsLock>();
@@ -165,15 +168,19 @@ namespace MikeSchweitzer.Git.Editor
 
         private void AddContextMenuCopyItems(GenericMenu menu, int id)
         {
-            var lfsLock = _locks[id];
-            
-            menu.AddItem(new GUIContent($"Copy/User"), false, () => 
+            var index = IdToIndex(id);
+            if (index >= _locks.Length)
+                return;
+
+            var lfsLock = _locks[index];
+
+            menu.AddItem(new GUIContent($"Copy/User"), false, () =>
                 GUIUtility.systemCopyBuffer = lfsLock._User);
-            
-            menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () => 
+
+            menu.AddItem(new GUIContent($"Copy/Asset Path"), false, () =>
                 GUIUtility.systemCopyBuffer = lfsLock._Path);
-            
-            menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () => 
+
+            menu.AddItem(new GUIContent($"Copy/Asset GUID"), false, () =>
                 GUIUtility.systemCopyBuffer = lfsLock._AssetGuid);
 
             if (!string.IsNullOrEmpty(lfsLock._Id))
@@ -219,9 +226,9 @@ namespace MikeSchweitzer.Git.Editor
             Reload();
         }
 
-        private void OnVisibleColumnsChanged(MultiColumnHeader _)
+        private void OnVisibleColumnsChanged(MultiColumnHeader header)
         {
-            multiColumnHeader.ResizeToFit();
+            header.ResizeToFit();
         }
         #endregion
     }
