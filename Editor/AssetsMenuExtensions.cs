@@ -16,7 +16,7 @@ namespace MikeSchweitzer.Git.Editor
         private static bool ValidateGitLock()
         {
             if (!GitSettings.HasUsername)
-                return false;
+                return true;
 
             var objects = GetDeepAssets();
             if (objects.Length > GitSettings.MaxLockItems)
@@ -34,6 +34,9 @@ namespace MikeSchweitzer.Git.Editor
         [MenuItem("Assets/Git Lock", priority = 10_000)]
         private static void GitLock()
         {
+            if (ShowUsernameEntryIfNeeded())
+                return;
+
             var objects = GetDeepAssets();
             foreach (var obj in objects)
             {
@@ -51,7 +54,7 @@ namespace MikeSchweitzer.Git.Editor
         private static bool ValidateGitUnlock()
         {
             if (!GitSettings.HasUsername)
-                return false;
+                return true;
 
             var objects = GetDeepAssets();
             if (objects.Length > GitSettings.MaxLockItems)
@@ -75,6 +78,9 @@ namespace MikeSchweitzer.Git.Editor
         [MenuItem("Assets/Git Unlock", priority = 10_000)]
         private static void GitUnlock()
         {
+            if (ShowUsernameEntryIfNeeded())
+                return;
+
             var objects = GetDeepAssets();
             foreach (var obj in objects)
             {
@@ -96,7 +102,7 @@ namespace MikeSchweitzer.Git.Editor
         private static bool ValidateGitForceUnlock()
         {
             if (!GitSettings.HasUsername)
-                return false;
+                return true;
 
             var objects = GetDeepAssets();
             if (objects.Length > GitSettings.MaxLockItems)
@@ -116,6 +122,9 @@ namespace MikeSchweitzer.Git.Editor
         [MenuItem("Assets/Git Force Unlock", priority = 10_000)]
         private static void GitForceUnlock()
         {
+            if (ShowUsernameEntryIfNeeded())
+                return;
+
             if (!GitLocksEditor.DisplayForceUnlockConfirmationDialog())
                 return;
 
@@ -137,7 +146,20 @@ namespace MikeSchweitzer.Git.Editor
         #endregion
 
         #region Helper Methods
-        public static Object[] GetDeepAssets()
+        private static bool ShowUsernameEntryIfNeeded()
+        {
+            if (GitSettings.HasUsername)
+                return false;
+
+            EditorUtility.DisplayDialog("No Git Username",
+                "Enter your username for this project's host server (Git remote)",
+                "OK");
+
+            GitLocksEditor.ShowWindow();
+            return true;
+        }
+
+        private static Object[] GetDeepAssets()
         {
             SelectionAssets.Clear();
 
