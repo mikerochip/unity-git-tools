@@ -152,7 +152,7 @@ namespace MikeSchweitzer.Git.Editor
                 return false;
 
             EditorUtility.DisplayDialog("No Git Username",
-                "Enter your username for this project's host server (Git remote)",
+                "Enter your username for this project's Git hosting site (aka Git remote)",
                 "OK");
 
             GitLocksEditor.ShowWindow();
