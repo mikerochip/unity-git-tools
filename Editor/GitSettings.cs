@@ -397,7 +397,7 @@ namespace MikeSchweitzer.Git.Editor
         {
             _Locks.Clear();
 
-            if (result == null || result.ErrorLines.Count > 0)
+            if (result == null || result.ErrorLines.Count > 0 && result.OutLines.Count == 0)
             {
                 _lastLocksResultErrored = true;
             }
