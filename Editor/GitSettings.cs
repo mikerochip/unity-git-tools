@@ -596,9 +596,7 @@ namespace MikeSchweitzer.Git.Editor
                         // See https://blog.yaakov.online/waiting-for-a-process-with-timeout-in-net/
                         try
                         {
-                            var error = $"Timed out after {ProcessTimeoutMs / 1000.0f}s";
-                            Debug.LogError($"[Git] LfsCommand=\"{args}\"|Error=\"{error}\"");
-                            processResult.ErrorLines.Add(error);
+                            processResult.ErrorLines.Add($"Timed out after {ProcessTimeoutMs / 1000.0f}s");
                             process.Kill();
                             return processResult;
                         }
