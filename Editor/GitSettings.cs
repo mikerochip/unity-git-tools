@@ -536,18 +536,10 @@ namespace MikeSchweitzer.Git.Editor
             {
                 result = RunLfsProcess();
 
-                if (!result.ErrorLines.Any(line => line.Contains("lockcache.db")))
-                    break;
+                PruneIgnorableErrors();
 
-                try
-                {
-                    File.Delete(_lockCacheFilePath);
-                }
-                catch (IOException e)
-                {
-                    result.ErrorLines.Add($"Failed to delete lockcache.db after {attempts + 1} attempts. " +
-                                          $"Reason: {e.Message}");
-                }
+                if (!HandleLockCacheError())
+                    break;
 
                 ++attempts;
             } while (attempts < 2);
@@ -625,6 +617,40 @@ namespace MikeSchweitzer.Git.Editor
                 }
 
                 return processResult;
+            }
+
+            void PruneIgnorableErrors()
+            {
+                // if there is no valid data in the result, then don't consider any errors
+                // to be ignorable, since we want to tell the user _something_
+                if (result.OutLines.Count == 0)
+                    return;
+
+                for (var i = result.ErrorLines.Count - 1; i >= 0; --i)
+                {
+                    var error = result.ErrorLines[i];
+
+                    if (error.Contains("Error: operation \"store\" not supported"))
+                        result.ErrorLines.RemoveAt(i);
+                }
+            }
+
+            bool HandleLockCacheError()
+            {
+                if (!result.ErrorLines.Any(line => line.Contains("lockcache.db")))
+                    return false;
+
+                try
+                {
+                    File.Delete(_lockCacheFilePath);
+                }
+                catch (IOException e)
+                {
+                    result.ErrorLines.Add($"Failed to delete lockcache.db after {attempts + 1} attempts. " +
+                                          $"Reason: {e.Message}");
+                }
+
+                return true;
             }
         }
 

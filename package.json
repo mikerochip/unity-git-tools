@@ -1,6 +1,6 @@
 {
   "name": "com.mikeschweitzer.git-tools",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "displayName": "Git Tools",
   "description": "Add Git integrations to your project, mostly LFS locks",
   "unity": "2020.1",
