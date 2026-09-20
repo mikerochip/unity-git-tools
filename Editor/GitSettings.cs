@@ -71,7 +71,7 @@ namespace MikeSchweitzer.Git.Editor
         // self-hosted service, respectively
         // Assets/foo.png   	username                	ID:123456
         // Assets/foobar.png	Foo Bar (fbar@example.com)	ID:123456
-        private static Regex LocksResultRegex { get; } = new (
+        private static Regex LocksResultRegex { get; } = new(
             @"^(?<path>.+)\b\s*\t(.+\((?<user>\S+)@\S+\)|(?<user>\S+))\s*\tID:(?<id>\S+)$",
             RegexOptions.Compiled);
         #endregion
@@ -88,7 +88,13 @@ namespace MikeSchweitzer.Git.Editor
         [SerializeField] private bool _LockSortAscending;
 
         private string _repoRootPath;
+        // git path in a base repo folder is the .git folder (contains HEAD, config, lfs)
+        // git path in a worktree is inside the main repo's .git/worktrees/<worktree-name> (contains HEAD)
+        // git path in a submodule is inside the main repo's .git/modules/<submodule-name> (contains HEAD)
         private string _repoGitPath;
+        // common git path is needed to find the lfs folder from either a base, worktree, or submodule
+        // for a base repo, this will be the same as the git path
+        private string _repoCommonGitPath;
         private string _repoLfsPath;
         private string _lockCacheFilePath;
         private string _branch;
@@ -271,11 +277,12 @@ namespace MikeSchweitzer.Git.Editor
             var directory = Directory.GetParent(Application.dataPath);
             while (directory is { Exists: true })
             {
-                var gitPath = Path.Combine(directory.FullName, ".git");
-                if (Directory.Exists(gitPath))
+                var gitPath = ResolveGitPath(directory.FullName);
+                if (gitPath != null)
                 {
                     _repoGitPath = gitPath;
-                    _repoLfsPath = Path.Combine(_repoGitPath, "lfs");
+                    _repoCommonGitPath = ResolveCommonGitPath(gitPath);
+                    _repoLfsPath = Path.Combine(_repoCommonGitPath, "lfs");
                     _lockCacheFilePath = Path.Combine(_repoLfsPath, "lockcache.db");
                     _repoRootPath = directory.FullName;
                     break;
@@ -285,6 +292,51 @@ namespace MikeSchweitzer.Git.Editor
             }
         }
 
+        private static string ResolveGitPath(string directoryPath)
+        {
+            var gitPath = Path.Combine(directoryPath, ".git");
+            if (Directory.Exists(gitPath))
+                return gitPath;
+
+            // worktrees and submodules have a .git file instead of a folder, which points to the
+            // git path of this worktree/submodule inside of the base repo
+            //
+            // the contents of this .git file are:
+            // worktrees `gitdir: /{abspath-to-repo}/.git/worktrees/{worktree-name}`
+            // submodules `gitdir: ../.git/modules/{submodule-name}`
+            if (!File.Exists(gitPath))
+                return null;
+
+            const string prefix = "gitdir:";
+            var gitFileLines = File.ReadLines(gitPath);
+            var line = gitFileLines.FirstOrDefault(l => l.StartsWith(prefix));
+            if (line == null)
+                return null;
+
+            var gitDirPath = line.Substring(prefix.Length).Trim();
+            // the following works for both relative (submodule) and absolute (worktree) paths
+            // since if the second arg is an absolute path, the first arg will be ignored
+            gitDirPath = Path.GetFullPath(Path.Combine(directoryPath, gitDirPath));
+            return Directory.Exists(gitDirPath) ? gitDirPath : null;
+        }
+
+        private static string ResolveCommonGitPath(string gitPath)
+        {
+            // worktree git paths have a "commondir" file pointing to the main .git folder,
+            // usually as a relative path e.g. "../.."
+            var commonDirFilePath = Path.Combine(gitPath, "commondir");
+            if (!File.Exists(commonDirFilePath))
+                return gitPath;
+
+            var commonDirFileLines = File.ReadLines(commonDirFilePath);
+            var commonDirPath = commonDirFileLines.FirstOrDefault()?.Trim();
+            if (string.IsNullOrEmpty(commonDirPath))
+                return gitPath;
+
+            commonDirPath = Path.GetFullPath(Path.Combine(gitPath, commonDirPath));
+            return Directory.Exists(commonDirPath) ? commonDirPath : gitPath;
+        }
+
         private void LoadBranch()
         {
             _branch = string.Empty;
@@ -292,7 +344,7 @@ namespace MikeSchweitzer.Git.Editor
             if (!IsGitRepo)
                 return;
 
-            var headPath = Path.Combine(_repoRootPath, ".git", "HEAD");
+            var headPath = Path.Combine(_repoGitPath, "HEAD");
             if (!File.Exists(headPath))
                 throw new Exception($"[Git] Failed to load Git branch from \"{headPath}\"");
 
@@ -307,7 +359,7 @@ namespace MikeSchweitzer.Git.Editor
             if (!IsGitRepo)
                 return;
 
-            var configPath = Path.Combine(_repoRootPath, ".git", "config");
+            var configPath = Path.Combine(_repoCommonGitPath, "config");
             if (!File.Exists(configPath))
                 throw new Exception($"[Git] Failed to load Git config \"{configPath}\"");
 
